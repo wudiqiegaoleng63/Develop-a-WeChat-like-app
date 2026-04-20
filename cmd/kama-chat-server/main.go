@@ -1,9 +1,11 @@
 package main
 
-import "kama-chat-server/pkg/zlog"
+import (
+    "fmt"
+    "kama-chat-server/internal/dao"  // ★导入就会自动执行init()
+)
 
 func main() {
-    zlog.Info("服务器启动")
-    zlog.Debug("调试信息")
-    zlog.Warn("警告信息")
+    // dao.GormDB已经可用
+    fmt.Println("GormDB:", dao.GormDB)
 }
