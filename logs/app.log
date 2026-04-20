@@ -1,0 +1,3 @@
+{"level":"info","ts":"2026-04-20T18:23:39.667+0800","caller":"zlog/logger.go:85","msg":"服务器启动","func":"main.main","file":"C:/Users/li/Desktop/kama-chat-server/cmd/kama-chat-server/main.go","line":6}
+{"level":"debug","ts":"2026-04-20T18:23:39.667+0800","caller":"zlog/logger.go:108","msg":"调试信息","func":"main.main","file":"C:/Users/li/Desktop/kama-chat-server/cmd/kama-chat-server/main.go","line":7}
+{"level":"warn","ts":"2026-04-20T18:23:39.667+0800","caller":"zlog/logger.go:97","msg":"警告信息","func":"main.main","file":"C:/Users/li/Desktop/kama-chat-server/cmd/kama-chat-server/main.go","line":8}
