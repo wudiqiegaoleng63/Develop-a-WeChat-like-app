@@ -13,3 +13,6 @@ databaseName = "kama_chat"
 [logConfig]
 logPath = "./logs/app.log"
 
+[staticSrcConfig]
+staticAvatarPath = "./static/avatars"
+staticFilePath = "./static/files"

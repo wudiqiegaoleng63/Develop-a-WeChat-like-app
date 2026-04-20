@@ -27,7 +27,8 @@ func init() {
 )
 
 	// 连接
-	GormDB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	var err error
+	GormDB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("数据库连接失败：" + err.Error())
 	}

@@ -26,12 +26,22 @@ type LogConfig struct {
 	LogPath	string	`toml:"logPath"`
 }
 
+type StaticSrcConfig struct {
+    StaticAvatarPath string `toml:"staticAvatarPath"`
+    StaticFilePath   string `toml:"staticFilePath"`
+}
+
+
 // 总配置
 type Config struct {
-	MainConfig  MainConfig  `toml:"mainConfig"`
-    MysqlConfig MysqlConfig `toml:"mysqlConfig"`
-    LogConfig   LogConfig   `toml:"logConfig"`
+	MainConfig    `toml:"mainConfig"`
+    MysqlConfig  `toml:"mysqlConfig"`
+    LogConfig      `toml:"logConfig"`
+	StaticSrcConfig `toml:"staticSrcConfig"`
+	
 }
+
+
 
 var config *Config
 
