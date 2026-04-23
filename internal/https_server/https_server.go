@@ -2,9 +2,10 @@ package https_server
 
 import (
 	"kama-chat-server/internal/config"
-
+	"strconv"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	v1 "kama-chat-server/api/v1"
 )
 
 // 全局gin实例
@@ -18,7 +19,7 @@ func init() {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"*"}
 	corsConfig.AllowMethods = []string{"GET", "PUT", "POST", "DELETE"}
-	corsConfig.AllowHeaders = []string{"Orign", "Content-Type"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type"}
 	GE.Use(cors.New(corsConfig))
 
 

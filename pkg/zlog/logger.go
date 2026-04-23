@@ -47,7 +47,7 @@ func init() {
     )
 
     // 5. 创建Logger
-    logger = zap.New(core)
+    logger = zap.New(core, zap.AddCaller())
 
 }
 
