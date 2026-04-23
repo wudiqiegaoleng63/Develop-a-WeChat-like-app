@@ -22,3 +22,11 @@ host = "127.0.0.1"
 port = 6379
 password = ""
 db = 0
+
+# 邮箱验证码配置
+[emailConfig]
+smtpHost     = "smtp.qq.com"           # SMTP服务器
+smtpPort     = 465                      # 端口（SSL加密）
+smtpUsername = "746894206@qq.com"      # 发件邮箱
+smtpPassword = "rrxetnwqciazbbcc"       # 授权码（16位）
+fromName     = "KamaChat"               # 发件人名称

@@ -40,3 +40,14 @@ type GetUserInfoRequest struct {
 type UserUuidsRequest struct {
     Uuids []string `json:"uuids" binding:"required"` // 用户Uuid数组
 }
+
+// SendEmailCodeRequest 发送邮箱验证码请求
+type SendEmailCodeRequest struct {
+    Email string `json:"email" binding:"required,email"` // 邮箱地址
+}
+
+// VerifyEmailCodeRequest 验证邮箱验证码请求
+type VerifyEmailCodeRequest struct {
+    Email string `json:"email" binding:"required,email"` // 邮箱地址
+    Code  string `json:"code" binding:"required"`        // 验证码
+}

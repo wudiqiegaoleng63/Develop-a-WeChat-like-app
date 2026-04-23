@@ -39,14 +39,30 @@ type RedisConfig struct {
     Db       int    `toml:"db"`
 }
 
+// AuthCodeConfig - 阿里云短信验证配置
+// type AuthCodeConfig struct {
+//     AccessKeyID     string `toml:"accessKeyID"`     // 阿里云AccessKey ID
+//     AccessKeySecret string `toml:"accessKeySecret"` // 阿里云AccessKey Secret
+//     SignName        string `toml:"signName"`        // 短信签名
+//     TemplateCode    string `toml:"templateCode"`    // 短信模板Code
+// }
+
+type EmailConfig struct {
+    SmtpHost     string `toml:"smtpHost"`     // SMTP服务器
+    SmtpPort     int    `toml:"smtpPort"`     // 端口
+    SmtpUsername string `toml:"smtpUsername"` // 发件邮箱
+    SmtpPassword string `toml:"smtpPassword"` // 授权码
+    FromName     string `toml:"fromName"`     // 发件人名称
+}
+
 // 总配置
 type Config struct {
-	MainConfig    `toml:"mainConfig"`
-    MysqlConfig  `toml:"mysqlConfig"`
-    LogConfig      `toml:"logConfig"`
+	MainConfig    	`toml:"mainConfig"`
+    MysqlConfig  	`toml:"mysqlConfig"`
+    LogConfig      	`toml:"logConfig"`
 	StaticSrcConfig `toml:"staticSrcConfig"`
 	RedisConfig     `toml:"redisConfig"`
-	
+	EmailConfig    `toml:"emailConfig"`
 }
 
 
