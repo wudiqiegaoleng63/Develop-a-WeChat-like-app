@@ -1,14 +1,17 @@
 package email
 
 import (
+	"crypto/tls"
+	"net/smtp"
+	"strconv"
+	"time"
+
+	"github.com/jordan-wright/email"
+
 	"kama-chat-server/internal/config"
 	"kama-chat-server/internal/service/redis"
 	"kama-chat-server/pkg/constants"
 	"kama-chat-server/pkg/util/random"
-	"net/smtp"
-	"strconv"
-	"time"
-	"github.com/jordan-wright/email"
 )
 
 // ============================================================
@@ -21,9 +24,8 @@ func SendVerificationCode(toEmail string) (string, int) {
 		return constants.SYSTEM_ERROR, -1
 	}
 
-
 	if code != "" {
-		return "验证码已发送, 请检查邮箱或5分钟后重试", -2
+		return "验证码已发送，请检查邮箱或5分钟后重试", -2
 	}
 
 	codeInt, err := random.GetRandomInt(6)
@@ -63,7 +65,7 @@ func VerifyCode(email string, inputCode string) (string, int) {
 	if storedCode != inputCode {
 		return "验证码错误", -2
 	}
-	// 验证成功， 删除验证码
+
 	redis.DelKeyIfExists(key)
 	return "验证成功", 0
 }
@@ -75,24 +77,30 @@ func sendEmail(toEmail string, code string) error {
 	conf := config.GetConfig()
 
 	e := email.NewEmail()
-    e.From = conf.EmailConfig.FromName + " <" + conf.EmailConfig.SmtpUsername + ">"
-    e.To = []string{toEmail}
-    e.Subject = "【KamaChat】邮箱验证码"
-    e.HTML = []byte(buildEmailHTML(code))
+	e.From = conf.EmailConfig.FromName + " <" + conf.EmailConfig.SmtpUsername + ">"
+	e.To = []string{toEmail}
+	e.Subject = "【KamaChat】邮箱验证码"
+	e.HTML = []byte(buildEmailHTML(code))
 
-    // 发送邮件
-    auth := smtp.PlainAuth("", conf.EmailConfig.SmtpUsername, conf.EmailConfig.SmtpPassword, conf.EmailConfig.SmtpHost)
-    return e.Send(
-        conf.EmailConfig.SmtpHost+":"+strconv.Itoa(conf.EmailConfig.SmtpPort),
-        auth,
-    )
+	// ★端口465是SSL端口，需要用SendWithTLS
+	addr := conf.EmailConfig.SmtpHost + ":" + strconv.Itoa(conf.EmailConfig.SmtpPort)
+	auth := smtp.PlainAuth("", conf.EmailConfig.SmtpUsername, conf.EmailConfig.SmtpPassword, conf.EmailConfig.SmtpHost)
+
+	// ★创建TLS配置，跳过证书验证（QQ邮箱需要）
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         conf.EmailConfig.SmtpHost,
+	}
+
+	// 发送SSL加密邮件
+	return e.SendWithTLS(addr, auth, tlsConfig)
 }
 
 // ============================================================
 // buildEmailHTML - 构建邮件HTML内容
 // ============================================================
 func buildEmailHTML(code string) string {
-    return `
+	return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -112,9 +120,3 @@ func buildEmailHTML(code string) string {
 </html>
 `
 }
-
-
-
-
-
-
