@@ -27,7 +27,9 @@ type userInfoService struct {
 // 全局服务实例
 var UserInfoService UserInfoServiceInterface = &userInfoService{}
 
+// ============================================================
 // Login - 登录业务逻辑
+// ============================================================
 func (u *userInfoService) Login(loginReq request.LoginRequest) (string, *respond.LoginRespond, int) {
 	//  1. 根据手机号查询用户	
 	var user model.UserInfo
@@ -68,10 +70,13 @@ func (u *userInfoService) Login(loginReq request.LoginRequest) (string, *respond
 
 	// CreateAt 格式化
 	year, month, day := user.CreatedAt.Date()
-	loginRsp.CreatedAt = fmt.Sprint("%d.%d.%d", year, month, day)
+	loginRsp.CreatedAt = fmt.Sprintf("%d.%d.%d", year, month, day)
 
 	return "登录成功", loginRsp, 0
 }
 
+// ============================================================
+// Register - 注册业务逻辑
+// ============================================================
 
 

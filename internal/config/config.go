@@ -31,6 +31,13 @@ type StaticSrcConfig struct {
     StaticFilePath   string `toml:"staticFilePath"`
 }
 
+// redis配置
+type RedisConfig struct {
+    Host     string `toml:"host"`
+    Port     int    `toml:"port"`
+    Password string `toml:"password"`
+    Db       int    `toml:"db"`
+}
 
 // 总配置
 type Config struct {
@@ -38,6 +45,7 @@ type Config struct {
     MysqlConfig  `toml:"mysqlConfig"`
     LogConfig      `toml:"logConfig"`
 	StaticSrcConfig `toml:"staticSrcConfig"`
+	RedisConfig     `toml:"redisConfig"`
 	
 }
 

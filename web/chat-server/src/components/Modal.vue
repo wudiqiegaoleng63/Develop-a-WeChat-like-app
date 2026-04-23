@@ -1,54 +1,51 @@
 <template>
-  <el-dialog
-    v-model="isVisible"
-    :title="title"
-    :width="width"
-    :close-on-click-modal="false"
-    @close="handleClose"
-  >
-    <template #header>
-      <slot name="header"></slot>
-    </template>
-    <slot name="body"></slot>
-    <template #footer>
-      <slot name="footer"></slot>
-    </template>
-  </el-dialog>
+
+  <div class="modal-overlay" v-if="isVisible">
+    <div class="modal-content">
+      <slot name="header">
+      </slot>
+      <slot name="body">
+      </slot>
+      <slot name="footer">
+      </slot>
+    </div>
+  </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
-  isVisible: {
-    type: Boolean,
-    default: false
+<script>
+export default {
+  name: "Modal",
+  props: {
+    isVisible: false,
   },
-  title: {
-    type: String,
-    default: ''
-  },
-  width: {
-    type: String,
-    default: '50%'
-  }
-})
-
-const emit = defineEmits(['close', 'update:isVisible'])
-
-const isVisible = computed({
-  get() {
-    return props.isVisible
-  },
-  set(value) {
-    emit('update:isVisible', value)
-  }
-})
-
-const handleClose = () => {
-  emit('close')
-}
+};
 </script>
 
 <style scoped>
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  border-radius: 30px;
+}
+
+.modal-content {
+  background: #fff;
+  height: 400px;
+  border-radius: 20px;
+  width: 500px;
+  box-shadow: 0 2px 15px rgb(195, 8, 8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+}
+
 </style>

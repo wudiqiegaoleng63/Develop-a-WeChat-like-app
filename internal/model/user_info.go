@@ -1,12 +1,13 @@
 package model
 
 import (
-    "time"
-    "gorm.io/gorm"
+	"database/sql"  // ★新增：用于sql.NullTime类型
+	"time"
+
+	"gorm.io/gorm"
 )
 
-// UserInfo表
-
+// UserInfo 用户表
 type UserInfo struct {
 	Id            int64          `gorm:"column:id;primaryKey;comment:自增id"`
 	Uuid          string         `gorm:"column:uuid;uniqueIndex;type:char(20);comment:用户唯一id"`
@@ -20,6 +21,15 @@ type UserInfo struct {
 	Birthday      string         `gorm:"column:birthday;type:char(8);comment:生日"`
 	CreatedAt     time.Time      `gorm:"column:created_at;index;type:datetime;not null;comment:创建时间"`
 	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at;type:datetime;comment:删除时间"`
+	// ★新增：用户在线状态相关字段
+	LastOnlineAt  sql.NullTime   `gorm:"column:last_online_at;type:datetime;comment:上次登录时间"`
+	LastOfflineAt sql.NullTime   `gorm:"column:last_offline_at;type:datetime;comment:最近离线时间"`
 	IsAdmin       int8           `gorm:"column:is_admin;not null;comment:是否是管理员，0.不是，1.是"`
-	Status        int8           `gorm:"column:status;not null;comment:状态，0.正常，1.禁用"`
+	// ★Status添加index，便于快速查询禁用用户
+	Status        int8           `gorm:"column:status;index;not null;comment:状态，0.正常，1.禁用"`
+}
+
+// ★新增：TableName方法
+func (UserInfo) TableName() string {
+	return "user_info"
 }

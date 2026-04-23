@@ -1,62 +1,53 @@
 <template>
-  <el-dialog
-    v-model="isVisible"
-    :title="title"
-    width="300px"
-    :close-on-click-modal="false"
-    @close="handleClose"
-  >
-    <span>{{ content }}</span>
-    <template #footer>
-      <el-button @click="handleCancel">取消</el-button>
-      <el-button type="primary" @click="handleConfirm">确认</el-button>
-    </template>
-  </el-dialog>
+
+  <div class="modal-overlay" v-if="isVisible">
+    <div class="modal-content">
+      <slot name="header">
+      </slot>
+      <slot name="body">
+      </slot>
+      <slot name="footer">
+      </slot>
+    </div>
+  </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
-  isVisible: {
-    type: Boolean,
-    default: false
+<script>
+export default {
+  name: "Modal",
+  props: {
+    isVisible: false,
   },
-  title: {
-    type: String,
-    default: '提示'
-  },
-  content: {
-    type: String,
-    default: ''
-  }
-})
-
-const emit = defineEmits(['close', 'confirm', 'cancel', 'update:isVisible'])
-
-const isVisible = computed({
-  get() {
-    return props.isVisible
-  },
-  set(value) {
-    emit('update:isVisible', value)
-  }
-})
-
-const handleClose = () => {
-  emit('close')
-}
-
-const handleCancel = () => {
-  emit('cancel')
-  emit('update:isVisible', false)
-}
-
-const handleConfirm = () => {
-  emit('confirm')
-  emit('update:isVisible', false)
-}
+};
 </script>
 
 <style scoped>
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  border-radius: 30px;
+}
+
+.modal-content {
+  background: #fff;
+  height: 300px;
+  border-radius: 20px;
+  width: 350px;
+  box-shadow: 0 2px 15px rgb(195, 8, 8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  
+}
+
+
 </style>

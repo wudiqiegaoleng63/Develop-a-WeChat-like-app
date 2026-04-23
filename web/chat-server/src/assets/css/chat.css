@@ -1,0 +1,206 @@
+.chat-wrap {
+    height: 100vh;
+    background-image: url("@/assets/img/chat_server_background.jpg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.chat-window {
+    background-color: rgb(255, 255, 255);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: fixed;
+    width: 1000px;
+    height: 600px;
+    border-radius: 30px;
+}
+
+.chat-window-container {
+    height: 100%;
+    border-radius: 30px;
+}
+
+.aside-container {
+    width: 30%;
+    border-right: 3px solid #ccc;
+    display: flex;
+    flex-direction: row;
+}
+
+.el-header {
+    height: 8%;
+}
+
+.main-container {
+    padding: 0;
+    border-top: 3px solid #ccc;
+    height: 62%;
+}
+
+.el-footer {
+    padding: 0;
+    border-top: 3px solid #ccc;
+    height: 30%;
+    display: flex;
+    flex-direction: row;
+}
+
+.navigation-bar {
+    border-top-left-radius: 30px;
+    border-bottom-left-radius: 30px;
+    background-color: rgb(252, 210.9, 210.9);
+    width: 25%;
+    height: 100%;
+}
+
+.up-bar {
+    height: 13%;
+    display: flex;
+    flex-direction: column;
+}
+
+.middle-bar {
+    height: 57%;
+    display: flex;
+    flex-direction: column;
+}
+
+.down-bar {
+    height: 30%;
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.contactlist-container {
+    height: 100%;
+    width: 74%;
+}
+
+.chat-name {
+    font-family: "阿里妈妈数黑体 Bold";
+    display: flex;
+    align-items: center;
+    color: #4e4e4e;
+    width: 50%;
+    height: 100%;
+}
+
+.chat-input {
+    width: 90%;
+    resize: none;
+}
+
+.chat-screen {
+    height: 90%;
+}
+
+.tool-bar {
+    height: 10%;
+    background-color: rgb(252, 210.9, 210.9);
+    display: flex;
+    flex-direction: row;
+}
+
+.tool-bar-left {
+    height: 100%;
+    width: 50%;
+    display: flex;
+    flex-direction: row;
+}
+
+.tool-bar-right {
+    height: 100%;
+    width: 50%;
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+.send-btn {
+    height: 20%;
+    width: 100%;
+    background-color: rgb(252, 210.9, 210.9);
+    border-bottom-right-radius: 30px;
+}
+
+.chat-send {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 10%;
+    height: 100%;
+}
+
+.image-button {
+    background-color: rgba(255, 255, 255, 0);
+    /*透明*/
+    border: none;
+    /*去除边框*/
+    cursor: pointer;
+    height: 100%;
+    width: 12%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.icon-btn {
+    background-color: rgba(255, 255, 255, 0);
+    /*透明*/
+    border: none;
+    /*去除边框*/
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    width: 74px;
+}
+
+.avatar-btn {
+    background-color: rgba(0, 0, 0, 0);
+    /*透明*/
+    border: none;
+    /*去除边框*/
+    cursor: pointer;
+    display: flex;
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+}
+
+.record-icon,
+.upload-icon,
+.sticker-icon,
+.copy-icon,
+.av-icon {
+    width: 15px;
+    height: 15px;
+}
+
+.edit-btn {
+    height: 8%;
+    width: 100%;
+    background-color: rgb(252, 210.9, 210.9);
+    border-bottom-right-radius: 30px;
+}
+
+.el-popper.is-customized {
+    /* Set padding to ensure the height is 32px */
+    padding: 6px 12px;
+    /*background: linear-gradient(90deg, rgb(244, 154, 162), rgb(250, 193, 211));*/
+    background: rgb(250, 183, 183);
+}
+
+.el-popper.is-customized .el-popper__arrow::before {
+    /*background: rgb(244, 154, 162);*/
+    background: rgb(250, 183, 183);
+}
+
+
+.modal-close-btn {
+    background-color: rgb(252, 210.9, 210.9);
+    border-radius: 6px;
+}
+

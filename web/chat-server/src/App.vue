@@ -2,100 +2,86 @@
   <router-view />
 </template>
 
-<script setup>
-import { onMounted, onBeforeUnmount } from 'vue'
-import { useStore } from 'vuex'
-import { useRouter } from 'vue-router'
-import axios from 'axios'
-import { ElMessage, ElNotification } from 'element-plus'
-
-const store = useStore()
-const router = useRouter()
-
-onMounted(() => {
-  // 从sessionStorage获取用户信息
-  const userInfoStr = sessionStorage.getItem('userInfo')
-  if (userInfoStr) {
-    const userInfo = JSON.parse(userInfoStr)
-    store.commit('setUserInfo', userInfo)
-
-    // 初始化WebSocket连接
-    initWebSocket()
-  }
-})
-
-onBeforeUnmount(() => {
-  if (store.state.socket) {
-    store.state.socket.close()
-  }
-})
-
-const initWebSocket = () => {
-  const wsUrl = store.state.wsUrl + '/wss?client_id=' + store.state.userInfo.uuid
-
-  try {
-    const socket = new WebSocket(wsUrl)
-    store.state.socket = socket
-
-    socket.onopen = () => {
-      console.log('WebSocket连接已建立')
-    }
-
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data)
-      console.log('收到WebSocket消息:', message)
-
-      // 处理不同类型的消息
-      if (message.type === 3) {
-        // 音视频消息
-        const avData = JSON.parse(message.av_data)
-        if (avData.messageId === 'PROXY' && avData.type === 'start_call') {
-          ElNotification({
-            title: '通话请求',
-            message: `收到来自${message.send_name}的通话请求`,
-            type: 'warning'
-          })
+<script>
+import { onMounted } from "vue";
+import { useStore } from "vuex";
+import axios from "axios";
+export default {
+  name: "App",
+  setup() {
+    const store = useStore();
+    const getUserInfo = async () => {
+      try {
+        const req = {
+          uuid: store.state.userInfo.uuid,
+        };
+        const rsp = await axios.post(
+          store.state.backendUrl + "/user/getUserInfo",
+          req
+        );
+        if (rsp.data.code == 200) {
+          if (!rsp.data.data.avatar.startsWith("http")) {
+            rsp.data.data.avatar = store.state.backendUrl + rsp.data.data.avatar;
+          }
+          store.commit("setUserInfo", rsp.data.data);
+        } else {
+          console.error(rsp.data.message);
         }
+        console.log(rsp);
+      } catch (error) {
+        console.log(error);
       }
-
-      // 触发自定义事件供其他组件监听
-      window.dispatchEvent(new CustomEvent('ws-message', { detail: message }))
-    }
-
-    socket.onclose = () => {
-      console.log('WebSocket连接已关闭')
-      store.state.socket = null
-    }
-
-    socket.onerror = (error) => {
-      console.error('WebSocket连接错误:', error)
-      ElMessage.error('WebSocket连接失败')
-    }
-  } catch (error) {
-    console.error('初始化WebSocket失败:', error)
-  }
-}
-
-// 获取用户信息
-const getUserInfo = () => {
-  if (!store.state.userInfo.uuid) return
-
-  axios.get(store.state.backendUrl + '/user/getUserInfo', {
-    params: { uuid: store.state.userInfo.uuid }
-  }).then(res => {
-    if (res.data.code === 200) {
-      store.commit('setUserInfo', res.data.data)
-    }
-  }).catch(err => {
-    console.error('获取用户信息失败:', err)
-  })
-}
+    };
+    const logout = async () => {
+      store.commit("cleanUserInfo");
+      const req = {
+        owner_id: data.userInfo.uuid,
+      };
+      const rsp = await axios.post(
+        store.state.backendUrl + "/user/wsLogout",
+        req
+      );
+      if (rsp.data.code == 200) {
+        router.push("/login");
+        ElMessage.success("账号被封禁，退出登录");
+      } else {
+        ElMessage.error(rsp.data.message);
+      }
+    };
+    onMounted(() => {
+      if (store.state.userInfo.uuid) {
+        getUserInfo();
+        if (store.state.userInfo.status == 1) {
+          logout();
+        }
+        const wsUrl =
+          store.state.wsUrl + "/wss?client_id=" + store.state.userInfo.uuid;
+          console.log(wsUrl);
+        store.state.socket = new WebSocket(wsUrl);
+        store.state.socket.onopen = () => {
+          console.log("WebSocket连接已打开");console.log("连接信令服务器成功");
+        };
+        store.state.socket.onmessage = (message) => {
+          console.log("收到消息：", message.data);
+        };
+        store.state.socket.onclose = () => {
+          console.log("WebSocket连接已关闭");
+        console.log("连接信令服务器断开");
+        };
+        store.state.socket.onerror = () => {
+          console.log("WebSocket连接发生错误");console.log("连接信令服务器失败，错误信息：", error);
+        };
+        console.log(store.state.socket);
+      }
+    });
+  },
+};
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* 推荐使用，以确保布局计算的一致性 */
 }
 </style>
