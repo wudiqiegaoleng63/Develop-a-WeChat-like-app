@@ -1,11 +1,12 @@
 package https_server
 
 import (
+	v1 "kama-chat-server/api/v1"
 	"kama-chat-server/internal/config"
 	"strconv"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	v1 "kama-chat-server/api/v1"
 )
 
 // 全局gin实例
@@ -35,6 +36,10 @@ func init() {
 func registerRoutes() {
 	// 用户相关路由 (POST)
 	GE.POST("/login", v1.Login)	//登录
+	v1Group := GE.Group("/api/v1")
+	v1Group.POST("/sendEmailCode", v1.SendEmailCode)
+    v1Group.POST("/verifyEmailCode", v1.VerifyEmailCode)
+
 }
 
 // RunServer 启动HTTP服务器
