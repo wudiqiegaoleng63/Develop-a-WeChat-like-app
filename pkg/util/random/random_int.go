@@ -3,10 +3,15 @@ package random
 import (
 	"errors"
 	"math/rand/v2"
+	"strconv"
+	"time"
 )
 
-// GetRandomInt 生成指定位数的随机数字字符串
+// ============================================================
+// GetRandomInt - 生成指定位数的随机数字
+// ============================================================
 // n: 位数，有效范围 1-18
+// 返回: n位随机数字，如 n=6 返回 123456~999999
 func GetRandomInt(n int) (int, error) {
 	// 参数校验
 	if n <= 0 {
@@ -21,6 +26,20 @@ func GetRandomInt(n int) (int, error) {
 	return rand.IntN(max-min+1) + min, nil
 }
 
+// ============================================================
+// GetNowAndLenRandomString - 生成日期+随机数字字符串
+// ============================================================
+func GetNowAndLenRandomString(n int) (string, error) {
+	randomInt, err := GetRandomInt(n)
+	if err != nil {
+		return "", err
+	}
+	return time.Now().Format("20060102") + strconv.Itoa(randomInt), nil
+}
+
+// ============================================================
+// pow - 整数幂运算（辅助函数）
+// ============================================================
 func pow(base, n int) int {
 	result := 1
 	for i := 0; i < n; i++ {

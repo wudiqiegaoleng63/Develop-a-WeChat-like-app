@@ -33,17 +33,22 @@
           <el-input v-model="registerData.nickname" />
         </el-form-item>
         <el-form-item
-          prop="telephone"
-          label="账号"
+          prop="email"
+          label="邮箱"
           :rules="[
             {
               required: true,
               message: '此项为必填项',
               trigger: 'blur',
             },
+            {
+              type: 'email',
+              message: '请输入有效的邮箱地址',
+              trigger: 'blur',
+            },
           ]"
         >
-          <el-input v-model="registerData.telephone" />
+          <el-input v-model="registerData.email" />
         </el-form-item>
         <el-form-item
           prop="password"
@@ -59,7 +64,7 @@
           <el-input type="password" v-model="registerData.password" />
         </el-form-item>
         <el-form-item
-          prop="sms_code"
+          prop="emailCode"
           label="验证码"
           :rules="[
             {
@@ -69,10 +74,10 @@
             },
           ]"
         >
-          <el-input v-model="registerData.sms_code" style="max-width: 200px">
+          <el-input v-model="registerData.emailCode" style="max-width: 200px">
             <template #append>
               <el-button
-                @click="sendSmsCode"
+                @click="sendEmailCode"
                 style="background-color: rgb(229, 132, 132); color: #ffffff"
                 >点击发送</el-button
               >
@@ -86,7 +91,7 @@
         >
       </div>
       <div class="go-login-button-container">
-        <button class="go-sms-login-btn" @click="handleSmsLogin">
+        <button class="go-sms-login-btn" @click="handleEmailLogin">
           验证码登录
         </button>
         <button class="go-password-login-btn" @click="handleLogin">
@@ -108,10 +113,10 @@ export default {
   setup() {
     const data = reactive({
       registerData: {
-        telephone: "",
+        email: "",
         password: "",
         nickname: "",
-        sms_code: "",
+        emailCode: "",
       },
     });
     const router = useRouter();
@@ -120,9 +125,9 @@ export default {
       try {
         if (
           !data.registerData.nickname ||
-          !data.registerData.telephone ||
+          !data.registerData.email ||
           !data.registerData.password ||
-          !data.registerData.sms_code
+          !data.registerData.emailCode
         ) {
           ElMessage.error("请填写完整注册信息。");
           return;
@@ -134,8 +139,8 @@ export default {
           ElMessage.error("昵称长度在 3 到 10 个字符。");
           return;
         }
-        if (!checkTelephoneValid()) {
-          ElMessage.error("请输入有效的手机号码。");
+        if (!checkEmailValid()) {
+          ElMessage.error("请输入有效的邮箱地址。");
           return;
         }
         const response = await axios.post(
@@ -178,37 +183,37 @@ export default {
         console.log(error);
       }
     };
-    const checkTelephoneValid = () => {
-      const regex = /^1[3456789]\d{9}$/;
-      return regex.test(data.registerData.telephone);
+    const checkEmailValid = () => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(data.registerData.email);
     };
 
     const handleLogin = () => {
       router.push("/login");
     };
 
-    const handleSmsLogin = () => {
-      router.push("/smsLogin");
+    const handleEmailLogin = () => {
+      router.push("/emailLogin");
     };
 
-    const sendSmsCode = async () => {
+    const sendEmailCode = async () => {
       if (
-        !data.registerData.telephone ||
+        !data.registerData.email ||
         !data.registerData.nickname ||
         !data.registerData.password
       ) {
         ElMessage.error("请填写完整注册信息。");
         return;
       }
-      if (!checkTelephoneValid()) {
-        ElMessage.error("请输入有效的手机号码。");
+      if (!checkEmailValid()) {
+        ElMessage.error("请输入有效的邮箱地址。");
         return;
       }
       const req = {
-        telephone: data.registerData.telephone,
+        email: data.registerData.email,
       };
       const rsp = await axios.post(
-        store.state.backendUrl + "/user/sendSmsCode",
+        store.state.backendUrl + "/user/sendEmailCode",
         req
       );
       console.log(rsp);
@@ -226,8 +231,8 @@ export default {
       router,
       handleRegister,
       handleLogin,
-      handleSmsLogin,
-      sendSmsCode,
+      handleEmailLogin,
+      sendEmailCode,
     };
   },
 };

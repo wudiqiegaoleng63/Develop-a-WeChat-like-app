@@ -13,17 +13,22 @@
         class="demo-dynamic"
       >
         <el-form-item
-          prop="telephone"
-          label="账号"
+          prop="email"
+          label="邮箱"
           :rules="[
             {
               required: true,
               message: '此项为必填项',
               trigger: 'blur',
             },
+            {
+              type: 'email',
+              message: '请输入有效的邮箱地址',
+              trigger: 'blur',
+            },
           ]"
         >
-          <el-input v-model="loginData.telephone" />
+          <el-input v-model="loginData.email" />
         </el-form-item>
         <el-form-item
           prop="password"
@@ -47,7 +52,7 @@
 
       <div class="go-register-button-container">
         <button class="go-register-btn" @click="handleRegister">注册</button>
-        <button class="go-sms-btn" @click="handleSmsLogin">验证码登录</button>
+        <button class="go-sms-btn" @click="handleEmailLogin">验证码登录</button>
       </div>
     </div>
   </div>
@@ -64,7 +69,7 @@ export default {
   setup() {
     const data = reactive({
       loginData: {
-        telephone: "",
+        email: "",
         password: "",
       },
     });
@@ -72,15 +77,15 @@ export default {
     const store = useStore();
     const handleLogin = async () => {
       try {
-        if (!data.loginData.telephone || !data.loginData.password) {
+        if (!data.loginData.email || !data.loginData.password) {
           ElMessage.error("请填写完整登录信息。");
           return;
         }
-        if (!checkTelephoneValid()) {
-          ElMessage.error("请输入有效的手机号码。");
+        if (!checkEmailValid()) {
+          ElMessage.error("请输入有效的邮箱地址。");
           return;
         }
-	console.log(store.state.backendUrl, store.state.wsUrl);
+        console.log(store.state.backendUrl, store.state.wsUrl);
         const response = await axios.post(
           store.state.backendUrl + "/login",
           data.loginData
@@ -126,15 +131,15 @@ export default {
         ElMessage.error(error);
       }
     };
-    const checkTelephoneValid = () => {
-      const regex = /^1[3456789]\d{9}$/;
-      return regex.test(data.loginData.telephone);
+    const checkEmailValid = () => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(data.loginData.email);
     };
     const handleRegister = () => {
       router.push("/register");
     };
-    const handleSmsLogin = () => {
-      router.push("/smsLogin");
+    const handleEmailLogin = () => {
+      router.push("/emailLogin");
     };
 
     return {
@@ -142,7 +147,7 @@ export default {
       router,
       handleLogin,
       handleRegister,
-      handleSmsLogin,
+      handleEmailLogin,
     };
   },
 };

@@ -7,7 +7,11 @@ import (
 	"kama-chat-server/internal/dto/request"
 	"kama-chat-server/internal/dto/respond"
 	"kama-chat-server/internal/model"
+	"kama-chat-server/internal/service/email"
 	"kama-chat-server/pkg/constants"
+	"kama-chat-server/pkg/enum/user_info/user_status_enum"
+	"kama-chat-server/pkg/util/random"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -15,6 +19,8 @@ import (
 // UserInfoServiceInterface - 服务接口定义
 type UserInfoServiceInterface interface {
 	Login(req request.LoginRequest) (string, *respond.LoginRespond, int)
+	Register(req request.RegisterRequest) (string, *respond.RegisterRespond, int)
+    EmailLogin(req request.EmailLoginRequest) (string, *respond.LoginRespond, int)
 
 }
 
@@ -31,10 +37,10 @@ var UserInfoService UserInfoServiceInterface = &userInfoService{}
 // Login - 登录业务逻辑
 // ============================================================
 func (u *userInfoService) Login(loginReq request.LoginRequest) (string, *respond.LoginRespond, int) {
-	//  1. 根据手机号查询用户	
+	//  1. 根据Email查询用户	
 	var user model.UserInfo
 
-	res := dao.GormDB.First(&user, "telephone = ?", loginReq.Telephone)
+	res := dao.GormDB.First(&user, "Email=?", loginReq.Email)
 
 	//  2.处理查询结果
 	if res.Error != nil {
@@ -76,7 +82,128 @@ func (u *userInfoService) Login(loginReq request.LoginRequest) (string, *respond
 }
 
 // ============================================================
-// Register - 注册业务逻辑
+// Register - 注册业务逻辑（邮箱+密码+昵称+邮箱验证码）
 // ============================================================
+func (u *userInfoService) Register (registerReq request.RegisterRequest) (string, *respond.RegisterRespond, int) {
+	// 1.验证邮箱验证码
+	message, ret := email.VerifyCode(registerReq.Email, registerReq.EmailCode)
+	if ret != 0 {
+		return message, nil, ret
+	}
 
+	// 2.验证邮箱是否已经注册
+	message, ret = u.checkEmailExist(registerReq.Email)
+	if ret != 0 {
+		return message, nil, ret
+	}
+
+	// 3.创建用户
+	var newUser model.UserInfo
+
+	// ★生成Uuid: "U" + 日期(8位) + 随机(11位) = 20位字符串
+	uuidStr, err := random.GetNowAndLenRandomString(11)
+	if err != nil {
+		return constants.SYSTEM_ERROR, nil, -1
+	}
+	newUser.Uuid = "U" + uuidStr
+
+	newUser.Email = registerReq.Email
+	newUser.Password = registerReq.Password
+	newUser.Nickname = registerReq.Nickname
+	newUser.Avatar = "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+	newUser.CreatedAt = time.Now()
+	newUser.IsAdmin = 0                       // 默认普通用户
+	newUser.Status = user_status_enum.NORMAL  // 默认正常状态
+
+    // ★dao.GormDB.Create: 创建记录
+    res := dao.GormDB.Create(&newUser)
+    if res.Error != nil {
+        return constants.SYSTEM_ERROR, nil, -1
+    }
+
+    // 4. 构建响应
+    registerRsp := &respond.RegisterRespond{
+        Uuid:      newUser.Uuid,
+        Telephone: newUser.Telephone,
+        Nickname:  newUser.Nickname,
+        Email:     newUser.Email,
+        Avatar:    newUser.Avatar,
+        Gender:    newUser.Gender,
+        Birthday:  newUser.Birthday,
+        Signature: newUser.Signature,
+        IsAdmin:   newUser.IsAdmin,
+        Status:    newUser.Status,
+    }
+    // ★CreatedAt格式化
+    year, month, day := newUser.CreatedAt.Date()
+    registerRsp.CreatedAt = fmt.Sprintf("%d.%d.%d", year, month, day)
+
+    return "注册成功", registerRsp, 0
+}
+// ============================================================
+// EmailLogin - 邮箱验证码登录（邮箱+验证码，免密码）
+// ============================================================
+func (u *userInfoService) EmailLogin(req request.EmailLoginRequest) (string, *respond.LoginRespond, int) {
+	// 1.查询用户
+	var user model.UserInfo
+
+	res := dao.GormDB.First(&user, "email=?", req.Email)
+	if res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound)	{
+			return "用户不存在, 请注册", nil, -2
+		}
+		return constants.SYSTEM_ERROR, nil, -1
+	}
+
+	// 2.验证邮箱验证码
+	message, ret := email.VerifyCode(req.Email, req.EmailCode)
+	if ret != 0 {
+		return message, nil, ret
+	}
+
+	// 3.检查用户状态
+	if user.Status == 1 {
+		return "用户已禁用", nil, -2
+	}
+
+	// 4.构建响应
+	loginRsp := &respond.LoginRespond{
+		Uuid:      user.Uuid,
+        Telephone: user.Telephone,
+        Nickname:  user.Nickname,
+        Email:     user.Email,
+        Avatar:    user.Avatar,
+        Gender:    user.Gender,
+        Birthday:  user.Birthday,
+        Signature: user.Signature,
+        IsAdmin:   user.IsAdmin,
+        Status:    user.Status,
+	}
+
+	year, month, day := user.CreatedAt.Date()
+    loginRsp.CreatedAt = fmt.Sprintf("%d.%d.%d", year, month, day)
+
+    return "登录成功", loginRsp, 0
+
+
+}
+
+// ============================================================
+// checkEmailExist - 检查邮箱是否已存在
+// ============================================================
+func (u *userInfoService) checkEmailExist(email string) (string, int) {
+	var user model.UserInfo
+
+	res := dao.GormDB.First(&user, "email=?", email)
+
+	if res.Error == nil {
+		return "邮箱已注册", -2
+	}
+
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return "", 0
+	}
+
+	return constants.SYSTEM_ERROR, -1
+}
 

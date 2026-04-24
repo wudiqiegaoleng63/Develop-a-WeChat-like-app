@@ -6,7 +6,7 @@
         boxShadow: `var(${'--el-box-shadow-dark'})`,
       }"
     >
-      <h2 class="login-item">登录</h2>
+      <h2 class="login-item">验证码登录</h2>
       <el-form
         ref="formRef"
         :model="loginData"
@@ -14,20 +14,25 @@
         class="demo-dynamic"
       >
         <el-form-item
-          prop="telephone"
-          label="账号"
+          prop="email"
+          label="邮箱"
           :rules="[
             {
               required: true,
               message: '此项为必填项',
               trigger: 'blur',
             },
+            {
+              type: 'email',
+              message: '请输入有效的邮箱地址',
+              trigger: 'blur',
+            },
           ]"
         >
-          <el-input v-model="loginData.telephone" />
+          <el-input v-model="loginData.email" />
         </el-form-item>
         <el-form-item
-          prop="sms_code"
+          prop="emailCode"
           label="验证码"
           :rules="[
             {
@@ -37,10 +42,10 @@
             },
           ]"
         >
-          <el-input v-model="loginData.sms_code" style="max-width: 200px">
+          <el-input v-model="loginData.emailCode" style="max-width: 200px">
             <template #append>
               <el-button
-                @click="sendSmsCode"
+                @click="sendEmailCode"
                 style="background-color: rgb(229, 132, 132); color: #ffffff"
                 >点击发送</el-button
               >
@@ -49,7 +54,7 @@
         </el-form-item>
       </el-form>
       <div class="login-button-container">
-        <el-button type="primary" class="login-btn" @click="handleSmsLogin"
+        <el-button type="primary" class="login-btn" @click="handleEmailLogin"
           >登录</el-button
         >
       </div>
@@ -69,28 +74,28 @@ import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { useStore } from "vuex";
 export default {
-  name: "smsLogin",
+  name: "EmailLogin",
   setup() {
     const data = reactive({
       loginData: {
-        telephone: "",
-        sms_code: "",
+        email: "",
+        emailCode: "",
       },
     });
     const router = useRouter();
     const store = useStore();
-    const handleSmsLogin = async () => {
+    const handleEmailLogin = async () => {
       try {
-        if (!data.loginData.telephone || !data.loginData.sms_code) {
+        if (!data.loginData.email || !data.loginData.emailCode) {
           ElMessage.error("请填写完整登录信息。");
           return;
         }
-        if (!checkTelephoneValid()) {
-          ElMessage.error("请输入有效的手机号码。");
+        if (!checkEmailValid()) {
+          ElMessage.error("请输入有效的邮箱地址。");
           return;
         }
         const response = await axios.post(
-          store.state.backendUrl + "/user/smsLogin",
+          store.state.backendUrl + "/user/emailLogin",
           data.loginData
         );
         console.log(response);
@@ -134,9 +139,9 @@ export default {
         ElMessage.error(error);
       }
     };
-    const checkTelephoneValid = () => {
-      const regex = /^1[3456789]\d{9}$/;
-      return regex.test(data.loginData.telephone);
+    const checkEmailValid = () => {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(data.loginData.email);
     };
     const handleRegister = () => {
       router.push("/register");
@@ -144,21 +149,21 @@ export default {
     const handleLogin = () => {
       router.push("/login");
     };
-    const sendSmsCode = async () => {
-      if (!data.loginData.telephone) {
-        ElMessage.error("请输入手机号码。");
+    const sendEmailCode = async () => {
+      if (!data.loginData.email) {
+        ElMessage.error("请输入邮箱地址。");
         return;
       }
-      if (!checkTelephoneValid()) {
-        ElMessage.error("请输入有效的手机号码。");
+      if (!checkEmailValid()) {
+        ElMessage.error("请输入有效的邮箱地址。");
         return;
       }
       try {
         const req = {
-          telephone: data.loginData.telephone,
+          email: data.loginData.email,
         };
         const rsp = await axios.post(
-          store.state.backendUrl + "/user/sendSmsCode",
+          store.state.backendUrl + "/user/sendEmailCode",
           req
         );
         console.log(rsp);
@@ -177,10 +182,10 @@ export default {
     return {
       ...toRefs(data),
       router,
-      handleSmsLogin,
+      handleEmailLogin,
       handleLogin,
       handleRegister,
-      sendSmsCode,
+      sendEmailCode,
     };
   },
 };

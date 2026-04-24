@@ -12,9 +12,9 @@ const routes = [
     component: () => import('../views/access/Login.vue')
   },
   {
-    path: '/smsLogin',
-    name: 'smsLogin',
-    component: () => import('../views/access/SmsLogin.vue')
+    path: '/emailLogin',
+    name: 'EmailLogin',
+    component: () => import('../views/access/EmailLogin.vue')
   },
   {
     path: '/register',
@@ -55,7 +55,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   if (!store.state.userInfo.uuid) {
-    if (to.path === '/login' || to.path === '/register' || to.path === '/smsLogin') {
+    if (to.path === '/login' || to.path === '/register' || to.path === '/emailLogin') {
       next()
       return
     }

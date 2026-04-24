@@ -2,22 +2,24 @@ package request
 
 // 登录请求
 type LoginRequest struct {
-	Telephone	string	`json:"telephone" binding:"required"`
-	Password	string	`json:"password" binding:"required"`
+    Email    string `json:"email" binding:"required,email"` // 邮箱（必填）
+    Password string `json:"password" binding:"required"`    // 密码（必填）
 }
 
 // 注册请求
 type RegisterRequest struct {
-	Telephone string `json:"telephone" binding:"required"` // 手机号
-    Password  string `json:"password" binding:"required"`  // 密码
-    Nickname  string `json:"nickname" binding:"required"`  // 昵称
-    SmsCode   string `json:"smsCode" binding:"required"`   // 验证码
+    Email     string `json:"email" binding:"required,email"` // 邮箱地址
+    Password  string `json:"password" binding:"required"`    // 密码
+    Nickname  string `json:"nickname" binding:"required"`    // 昵称
+    EmailCode string `json:"emailCode" binding:"required"`   // 邮箱验证码
 }
 
-// SmsLoginRequest - 验证码登录请求
-type SmsLoginRequest struct {
-    Telephone string `json:"telephone" binding:"required"`
-    SmsCode   string `json:"smsCode" binding:"required"`
+// ============================================================
+// EmailLoginRequest - 邮箱验证码登录请求
+// ============================================================
+type EmailLoginRequest struct {
+    Email     string `json:"email" binding:"required,email"` // 邮箱地址
+    EmailCode string `json:"emailCode" binding:"required"`   // 邮箱验证码
 }
 
 // UpdateUserInfoRequest - 更新用户信息请求

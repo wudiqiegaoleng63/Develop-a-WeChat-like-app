@@ -35,9 +35,11 @@ func init() {
 
 func registerRoutes() {
 	// 用户相关路由 (POST)
-	GE.POST("/login", v1.Login)                         // 登录
-	GE.POST("/user/sendEmailCode", v1.SendEmailCode)    // 发送邮箱验证码
-	GE.POST("/user/verifyEmailCode", v1.VerifyEmailCode) // 验证邮箱验证码
+	GE.POST("/login", v1.Login)                          // 邮箱+密码登录
+    GE.POST("/register", v1.Register)                    // 注册
+    GE.POST("/user/emailLogin", v1.EmailLogin)           // 邮箱+验证码登录
+    GE.POST("/user/sendEmailCode", v1.SendEmailCode)     // 发送邮箱验证码
+    GE.POST("/user/verifyEmailCode", v1.VerifyEmailCode) // 验证邮箱验证码
 }
 
 // RunServer 启动HTTP服务器
