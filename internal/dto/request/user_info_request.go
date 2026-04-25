@@ -53,3 +53,10 @@ type VerifyEmailCodeRequest struct {
     Email string `json:"email" binding:"required,email"` // 邮箱地址
     Code  string `json:"code" binding:"required"`        // 验证码
 }
+
+// ============================================================
+// GetUserInfoListRequest - 获取用户列表请求（管理员）
+// ============================================================
+type GetUserInfoListRequest struct {
+    OwnerId string `json:"owner_id"` // 管理员uuid（用于排除自己）
+}

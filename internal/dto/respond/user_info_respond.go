@@ -63,3 +63,15 @@ type UserListItemRespond struct {
     Status    int8   `json:"status"`
     DeletedAt string `json:"deletedAt"` // ★软删除时间
 }
+
+// ============================================================
+// GetUserListRespond - 用户列表项响应（管理员）
+// ============================================================
+type GetUserListRespond struct {
+    Uuid      string `json:"uuid"`       // 用户唯一标识
+    Telephone string `json:"telephone"`  // 手机号
+    Nickname  string `json:"nickname"`   // 昵称
+    Status    int8   `json:"status"`      // 状态：0=正常，1=禁用
+    IsAdmin   int8   `json:"is_admin"`    // 是否管理员
+    IsDeleted bool   `json:"is_deleted"`  // 是否已软删除
+}

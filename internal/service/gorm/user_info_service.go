@@ -27,6 +27,7 @@ type UserInfoServiceInterface interface {
 	EmailLogin(req request.EmailLoginRequest) (string, *respond.LoginRespond, int)
 	UpdateUserInfo(updateReq request.UpdateUserInfoRequest) (string, int)
 	GetUserInfo(uuid string) (string, *respond.GetUserInfoRespond, int)
+	GetUserInfoList(ownerId string) (string, []respond.GetUserListRespond, int)
 }
 
 // userInfoService - 服务结构体 要返回的结构体 实现以上所有方法
@@ -309,3 +310,38 @@ func (u *userInfoService) GetUserInfo(uuid string) (string, *respond.GetUserInfo
 	}
 	return "获取用户信息成功", &rsp, 0
 }
+
+
+// ============================================================
+// GetUserInfoList - 获取用户列表（管理员）
+// ============================================================
+func (u *userInfoService) GetUserInfoList(ownerId string) (string, []respond.GetUserListRespond, int) {
+	var users []model.UserInfo
+	// 1.获取所有用户(除了管理员)
+	if res := dao.GormDB.Unscoped().Where("uuid != ?", ownerId).Find(&users); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, nil, -1
+	}
+
+	// 2.构建响应
+	var rsp []respond.GetUserListRespond
+	for _, user := range users {
+		rp := respond.GetUserListRespond{
+			Uuid:      user.Uuid,
+			Telephone: user.Telephone,
+			Nickname:  user.Nickname,
+			Status:    user.Status,
+			IsAdmin:   user.IsAdmin,
+		}
+
+		if user.DeletedAt.Valid {
+			rp.IsDeleted = true
+		} else {
+			rp.IsDeleted = false
+		}
+		rsp = append(rsp, rp)
+	}
+
+	return "获取用户列表成功", rsp, 0
+}
+

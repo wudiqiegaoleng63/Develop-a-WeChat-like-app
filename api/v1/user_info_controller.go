@@ -120,3 +120,23 @@ func GetUserInfo(c *gin.Context) {
 
 	JsonBack(c, message, ret, userInfo)
 }
+
+
+// ============================================================
+// GetUserInfoList - 获取用户列表（管理员）
+// ============================================================
+func GetUserInfoList(c *gin.Context) {
+	var req request.GetUserInfoListRequest
+	if err := c.BindJSON(&req); err != nil {
+		zlog.Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code": 500,
+			"message": constants.SYSTEM_ERROR,
+		})
+		return
+	}
+
+	message, userList, ret := gorm.UserInfoService.GetUserInfoList(req.OwnerId)
+	
+	JsonBack(c, message, ret, userList)
+}
