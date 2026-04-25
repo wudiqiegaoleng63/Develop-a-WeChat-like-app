@@ -28,6 +28,7 @@ type UserInfoServiceInterface interface {
 	UpdateUserInfo(updateReq request.UpdateUserInfoRequest) (string, int)
 	GetUserInfo(uuid string) (string, *respond.GetUserInfoRespond, int)
 	GetUserInfoList(ownerId string) (string, []respond.GetUserListRespond, int)
+	SetAdmin(uuidList []string, isAdmin int8) (string, int)
 }
 
 // userInfoService - 服务结构体 要返回的结构体 实现以上所有方法
@@ -343,5 +344,26 @@ func (u *userInfoService) GetUserInfoList(ownerId string) (string, []respond.Get
 	}
 
 	return "获取用户列表成功", rsp, 0
+}
+
+// ============================================================
+// SetAdmin - 设置管理员
+// ============================================================
+func (u *userInfoService) SetAdmin(uuidList []string, isAdmin int8) (string, int) {
+	var users []model.UserInfo
+
+	if res := dao.GormDB.Where("uuid = (?)", uuidList).Find(&users); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+
+	for _, user := range users {
+		user.IsAdmin = isAdmin
+		if res := dao.GormDB.Save(&user); res.Error != nil {
+			zlog.Error(res.Error.Error())
+			return constants.SYSTEM_ERROR, -1
+		}
+	}
+	return "设置管理员成功", 0
 }
 

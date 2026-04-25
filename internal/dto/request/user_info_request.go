@@ -60,3 +60,11 @@ type VerifyEmailCodeRequest struct {
 type GetUserInfoListRequest struct {
     OwnerId string `json:"owner_id"` // 管理员uuid（用于排除自己）
 }
+
+// ============================================================
+// AbleUsersRequest - 批量操作用户请求（包含IsAdmin）
+// ============================================================
+type AbleUsersRequest struct {
+    UuidList []string `json:"uuid_list"` // 用户uuid数组
+    IsAdmin  int8     `json:"is_admin"`  // 是否设置管理员
+}

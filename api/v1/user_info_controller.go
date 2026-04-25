@@ -140,3 +140,24 @@ func GetUserInfoList(c *gin.Context) {
 	
 	JsonBack(c, message, ret, userList)
 }
+
+// ============================================================
+// SetAdmin - 设置管理员
+// ============================================================
+
+func SetAdmin(c *gin.Context) {
+	var req request.AbleUsersRequest
+
+	if err := c.BindJSON(&req); err != nil {
+		zlog.Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code": 500,
+			"message": constants.SYSTEM_ERROR,
+		})
+		return 
+	}
+
+	message, ret := gorm.UserInfoService.SetAdmin(req.UuidList, req.IsAdmin)
+
+	JsonBack(c, message, ret, nil)
+}
