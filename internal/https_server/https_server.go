@@ -40,6 +40,21 @@ func registerRoutes() {
     GE.POST("/user/emailLogin", v1.EmailLogin)           // 邮箱+验证码登录
     GE.POST("/user/sendEmailCode", v1.SendEmailCode)     // 发送邮箱验证码
     GE.POST("/user/verifyEmailCode", v1.VerifyEmailCode) // 验证邮箱验证码
+	GE.POST("/user/updateUserInfo", v1.UpdateUserInfo)
+	GE.POST("/user/getUserInfoList", v1.GetUserInfoList)
+	GE.POST("/group/createGroup", v1.CreateGroup)
+	GE.POST("/group/loadMyGroup", v1.LoadMyGroup)
+	// GE.POST("/group/checkGroupAddMode", v1.CheckGroupAddMode)
+	// GE.POST("/group/enterGroupDirectly", v1.EnterGroupDirectly)
+	// GE.POST("/group/leaveGroup", v1.LeaveGroup)
+	// GE.POST("/group/dismissGroup", v1.DismissGroup)
+	// GE.POST("/group/getGroupInfo", v1.GetGroupInfo)
+	// GE.POST("/group/getGroupInfoList", v1.GetGroupInfoList)
+	// GE.POST("/group/deleteGroups", v1.DeleteGroups)
+	// GE.POST("/group/setGroupsStatus", v1.SetGroupsStatus)
+	// GE.POST("/group/updateGroupInfo", v1.UpdateGroupInfo)
+	// GE.POST("/group/getGroupMemberList", v1.GetGroupMemberList)
+	// GE.POST("/group/removeGroupMembers", v1.RemoveGroupMembers)
 }
 
 // RunServer 启动HTTP服务器
