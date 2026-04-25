@@ -6,6 +6,7 @@ import (
 	"kama-chat-server/internal/service/gorm"
 	"kama-chat-server/pkg/constants"
 	"kama-chat-server/pkg/zlog"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -80,3 +81,27 @@ func VerifyEmailCode(c *gin.Context) {
     message, ret := email.VerifyCode(req.Email, req.Code)
     JsonBack(c, message, ret, nil)
 }
+
+// ============================================================
+// UpdateUserInfo - 更新用户信息接口
+// ============================================================
+func UpdateUserInfo(c *gin.Context) {
+	// 1. 绑定请求参数
+	var req request.UpdateUserInfoRequest
+	if err := c.BindJSON(&req); err != nil {
+		zlog.Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code": 500,
+			"message": constants.SYSTEM_ERROR,
+		})
+		return
+	}
+	// 2. 调用Service层
+	message, ret := gorm.UserInfoService.UpdateUserInfo(req)
+	// 3. 返回响应
+	JsonBack(c, message, ret, nil)
+}
+
+// ============================================================
+// GetUserInfo - 获取用户信息
+// ============================================================

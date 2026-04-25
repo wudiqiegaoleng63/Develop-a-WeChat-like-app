@@ -11,8 +11,9 @@ import (
 	"kama-chat-server/pkg/constants"
 	"kama-chat-server/pkg/enum/user_info/user_status_enum"
 	"kama-chat-server/pkg/util/random"
+	"kama-chat-server/pkg/zlog"
 	"time"
-
+	// myredis "kama-chat-server/internal/service/redis"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +22,7 @@ type UserInfoServiceInterface interface {
 	Login(req request.LoginRequest) (string, *respond.LoginRespond, int)
 	Register(req request.RegisterRequest) (string, *respond.RegisterRespond, int)
     EmailLogin(req request.EmailLoginRequest) (string, *respond.LoginRespond, int)
+	UpdateUserInfo(updateReq request.UpdateUserInfoRequest) (string, int)
 
 }
 
@@ -205,5 +207,48 @@ func (u *userInfoService) checkEmailExist(email string) (string, int) {
 	}
 
 	return constants.SYSTEM_ERROR, -1
+}
+
+// ============================================================
+// UpdateUserInfo - 更新用户信息
+// ============================================================
+func (u *userInfoService) UpdateUserInfo(updateReq request.UpdateUserInfoRequest) (string, int) {
+	// 1.根据uuid查询用户
+	var user model.UserInfo
+
+	if res := dao.GormDB.First(&user, "uuid=?", updateReq.Uuid); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+
+	// 2.按需更新字段
+	if updateReq.Email != "" {
+        user.Email = updateReq.Email
+    }
+    if updateReq.Nickname != "" {
+        user.Nickname = updateReq.Nickname
+    }
+    if updateReq.Birthday != "" {
+        user.Birthday = updateReq.Birthday
+    }
+    if updateReq.Signature != "" {
+        user.Signature = updateReq.Signature
+    }
+    if updateReq.Avatar != "" {
+        user.Avatar = updateReq.Avatar
+    }
+
+	// 3.存数据库
+	if res := dao.GormDB.Save(&user); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+	// ★4. 删除Redis缓存（当前代码被注释，暂不启用）
+    // 更新用户信息后，需要删除user_info缓存，下次查询会从数据库重新加载最新数据
+    // if err := myredis.DelKeysWithPattern("user_info_" + updateReq.Uuid); err != nil {
+    //    zlog.Error(err.Error())
+    // }
+
+	return "修改用户信息成功", 0
 }
 
