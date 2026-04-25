@@ -105,3 +105,18 @@ func UpdateUserInfo(c *gin.Context) {
 // ============================================================
 // GetUserInfo - 获取用户信息
 // ============================================================
+func GetUserInfo(c *gin.Context) {
+	var req request.GetUserInfoRequest
+	if err := c.BindJSON(&req); err != nil {
+		zlog.Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code":	500,
+			"message":	constants.SYSTEM_ERROR,
+		})
+		return
+	}
+	// 调用service
+	message, userInfo, ret := gorm.UserInfoService.GetUserInfo(req.Uuid)
+
+	JsonBack(c, message, ret, userInfo)
+}
