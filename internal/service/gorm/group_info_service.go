@@ -16,7 +16,9 @@ import (
 	"kama-chat-server/pkg/util/random"
 	"kama-chat-server/pkg/zlog"
 	"time"
+
 	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 type groupInfoService struct {
@@ -225,4 +227,223 @@ func (g *groupInfoService) GetGroupInfo(groupId string) (string, *respond.GetGro
 		zlog.Error(err.Error())
 	}
 	return "获取成功", rsp, 0
+}
+
+// EnterGroupDirectly 直接进群
+// ownerId 是群聊id
+func (g *groupInfoService) EnterGroupDirectly(ownerId, contactId string) (string, int) {
+	//  1. 查询群聊信息
+	var group model.GroupInfo
+	if res := dao.GormDB.First(&group, "uuid=?", ownerId); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+
+	// 2.json 序列化
+	var members []string
+	if err := json.Unmarshal(group.Members, &members); err != nil {
+		zlog.Error(err.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+	// 3.添加新成员
+
+	members = append(members, contactId)
+
+	// 4.json序列化
+	if data, err := json.Marshal(members); err != nil {
+		zlog.Error(err.Error())
+		return constants.SYSTEM_ERROR, -1
+	} else {
+		group.Members = data
+	}
+
+
+	// 5.更新数量
+	group.MemberCnt += 1
+
+	// 6.保存群基本信息
+	if res := dao.GormDB.Save(&group); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+
+	// 7.创建用户联系人记录
+	newContact := model.UserContact{
+        UserId:      contactId,
+        ContactId:   ownerId,
+        ContactType: contact_type_enum.GROUP,    // 群聊类型
+        Status:      contact_status_enum.NORMAL, // 正常状态
+        CreatedAt:   time.Now(),
+        UpdateAt:    time.Now(),
+    }
+    if res := dao.GormDB.Create(&newContact); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    // 8. ★清除Redis缓存（带错误处理）
+    if err := myredis.DelKeysWithPattern("group_session_list_" + ownerId); err != nil {
+        zlog.Error(err.Error())
+    }
+    if err := myredis.DelKeysWithPattern("my_joined_group_list_" + ownerId); err != nil {
+        zlog.Error(err.Error())
+    }
+
+    return "进群成功", 0
+}
+
+
+// LeaveGroup 退群
+func (g *groupInfoService) LeaveGroup(userId string, groupId string) (string, int) {
+    // 1. 查询群聊信息
+    var group model.GroupInfo
+    if res := dao.GormDB.First(&group, "uuid = ?", groupId); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    // 2. JSON反序列化：将Members字段转换为切片
+    var members []string
+    if err := json.Unmarshal(group.Members, &members); err != nil {
+        zlog.Error(err.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    // 3. 从成员列表中删除该用户
+    for i, member := range members {
+        if member == userId {
+            // ★核心：使用append删除切片元素
+            members = append(members[:i], members[i+1:]...)
+            break
+        }
+    }
+
+    // 4. JSON序列化：将切片转换回JSON
+    if data, err := json.Marshal(members); err != nil {
+        zlog.Error(err.Error())
+        return constants.SYSTEM_ERROR, -1
+    } else {
+        group.Members = data
+    }
+
+    // 5. 更新群成员数量
+    group.MemberCnt -= 1
+
+    // 6. 保存群聊信息
+    if res := dao.GormDB.Save(&group); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    // 7. 软删除会话记录
+    var deletedAt gorm.DeletedAt
+    deletedAt.Time = time.Now()
+    deletedAt.Valid = true
+    if res := dao.GormDB.Model(&model.Session{}).Where("send_id = ? AND receive_id = ?", userId, groupId).Update("deleted_at", deletedAt); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    // 8. 软删除联系人记录，并更新状态为"退群"
+    if res := dao.GormDB.Model(&model.UserContact{}).Where("user_id = ? AND contact_id = ?", userId, groupId).Updates(map[string]interface{}{
+        "deleted_at": deletedAt,
+        "status":     contact_status_enum.QUIT_GROUP, // 退群状态
+    }); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    // 9. 软删除申请记录
+    if res := dao.GormDB.Model(&model.ContactApply{}).Where("contact_id = ? AND user_id = ?", groupId, userId).Update("deleted_at", deletedAt); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    // 10. ★清除Redis缓存（带错误处理）
+    if err := myredis.DelKeysWithPattern("group_session_list_" + userId); err != nil {
+        zlog.Error(err.Error())
+    }
+    if err := myredis.DelKeysWithPattern("my_joined_group_list_ " + userId); err != nil {
+        zlog.Error(err.Error())
+    }
+
+    return "退群成功", 0
+}
+
+// DismissGroup 解散群聊
+func (g *groupInfoService) DismissGroup(ownerId, groupId string) (string, int) {
+    // 初始化软删除时间戳
+    var deletedAt gorm.DeletedAt
+    deletedAt.Time = time.Now()
+    deletedAt.Valid = true
+
+    // 1. 软删除群聊信息
+    if res := dao.GormDB.Model(&model.GroupInfo{}).Where("uuid = ?", groupId).Updates(
+        map[string]interface{}{
+            "deleted_at": deletedAt,
+            "updated_at": deletedAt.Time,
+        }); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    // 2. 软删除所有相关会话记录
+    var sessionList []model.Session
+    if res := dao.GormDB.Model(&model.Session{}).Where("receive_id = ?", groupId).Find(&sessionList); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+    for _, session := range sessionList {
+        if res := dao.GormDB.Model(&session).Updates(
+            map[string]interface{}{
+                "deleted_at": deletedAt,
+            }); res.Error != nil {
+            zlog.Error(res.Error.Error())
+            return constants.SYSTEM_ERROR, -1
+        }
+    }
+
+    // 3. 软删除所有相关联系人记录
+    var userContactList []model.UserContact
+    if res := dao.GormDB.Model(&model.UserContact{}).Where("contact_id = ?", groupId).Find(&userContactList); res.Error != nil {
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+
+    for _, userContact := range userContactList {
+        if res := dao.GormDB.Model(&userContact).Update("deleted_at", deletedAt); res.Error != nil {
+            zlog.Error(res.Error.Error())
+            return constants.SYSTEM_ERROR, -1
+        }
+    }
+
+    // 4. 软删除所有相关申请记录
+    var contactApplys []model.ContactApply
+    if res := dao.GormDB.Model(&contactApplys).Where("contact_id = ?", groupId).Find(&contactApplys); res.Error != nil {
+        if res.Error != gorm.ErrRecordNotFound {
+            zlog.Info(res.Error.Error())
+            return "无响应的申请记录需要删除", 0
+        }
+        zlog.Error(res.Error.Error())
+        return constants.SYSTEM_ERROR, -1
+    }
+    for _, contactApply := range contactApplys {
+        if res := dao.GormDB.Model(&contactApply).Update("deleted_at", deletedAt); res.Error != nil {
+            zlog.Error(res.Error.Error())
+            return constants.SYSTEM_ERROR, -1
+        }
+    }
+
+    // 5. ★清除Redis缓存（带错误处理）
+    if err := myredis.DelKeysWithPattern("contact_mygroup_list_" + ownerId); err != nil {
+        zlog.Error(err.Error())
+    }
+    if err := myredis.DelKeysWithPattern("group_session_list_" + ownerId); err != nil {
+        zlog.Error(err.Error())
+    }
+    if err := myredis.DelKeysWithPrefix("my_joined_group_list"); err != nil {
+        zlog.Error(err.Error())
+    }
+
+    return "解散群聊成功", 0
 }
