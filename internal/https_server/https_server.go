@@ -55,6 +55,12 @@ func registerRoutes() {
 	GE.POST("/group/updateGroupInfo", v1.UpdateGroupInfo)
 	GE.POST("/group/getGroupMemberList", v1.GetGroupMemberList)
 	GE.POST("/group/removeGroupMembers", v1.RemoveGroupMembers)
+	GE.POST("/session/openSession", v1.OpenSession)
+	GE.POST("/session/getUserSessionList", v1.GetUserSessionList)
+	GE.POST("/session/getGroupSessionList", v1.GetGroupSessionList)
+	GE.POST("/session/deleteSession", v1.DeleteSession)
+	GE.POST("/session/checkOpenSessionAllowed", v1.CheckOpenSessionAllowed)
+
 }
 
 // RunServer 启动HTTP服务器
