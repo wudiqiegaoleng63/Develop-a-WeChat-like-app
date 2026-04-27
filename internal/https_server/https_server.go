@@ -60,6 +60,12 @@ func registerRoutes() {
 	GE.POST("/session/getGroupSessionList", v1.GetGroupSessionList)
 	GE.POST("/session/deleteSession", v1.DeleteSession)
 	GE.POST("/session/checkOpenSessionAllowed", v1.CheckOpenSessionAllowed)
+	GE.POST("/contact/getUserList", v1.GetUserList)
+	GE.POST("/contact/loadMyJoinedGroup", v1.LoadMyJoinedGroup)
+	GE.POST("/contact/getContactInfo", v1.GetContactInfo)
+	GE.POST("/contact/deleteContact", v1.DeleteContact)
+	GE.POST("/contact/blackContact", v1.BlackContact)
+	GE.POST("/contact/cancelBlackContact", v1.CancelBlackContact)
 
 }
 
