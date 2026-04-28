@@ -161,3 +161,54 @@ func SetAdmin(c *gin.Context) {
 
 	JsonBack(c, message, ret, nil)
 }
+
+// ============================================================
+// AbleUsers - 启用用户（管理员）
+// ============================================================
+func AbleUsers(c *gin.Context) {
+	var req request.AbleUsersRequest
+	if err := c.BindJSON(&req); err != nil {
+		zlog.Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code":    500,
+			"message": constants.SYSTEM_ERROR,
+		})
+		return
+	}
+	message, ret := gorm.UserInfoService.AbleUsers(req.UuidList)
+	JsonBack(c, message, ret, nil)
+}
+
+// ============================================================
+// DisableUsers - 禁用用户（管理员）
+// ============================================================
+func DisableUsers(c *gin.Context) {
+	var req request.AbleUsersRequest
+	if err := c.BindJSON(&req); err != nil {
+		zlog.Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code":    500,
+			"message": constants.SYSTEM_ERROR,
+		})
+		return
+	}
+	message, ret := gorm.UserInfoService.DisableUsers(req.UuidList)
+	JsonBack(c, message, ret, nil)
+}
+
+// ============================================================
+// DeleteUsers - 删除用户（管理员，软删除）
+// ============================================================
+func DeleteUsers(c *gin.Context) {
+	var req request.AbleUsersRequest
+	if err := c.BindJSON(&req); err != nil {
+		zlog.Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code":    500,
+			"message": constants.SYSTEM_ERROR,
+		})
+		return
+	}
+	message, ret := gorm.UserInfoService.DeleteUsers(req.UuidList)
+	JsonBack(c, message, ret, nil)
+}

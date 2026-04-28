@@ -42,6 +42,11 @@ func registerRoutes() {
     GE.POST("/user/verifyEmailCode", v1.VerifyEmailCode) // 验证邮箱验证码
 	GE.POST("/user/updateUserInfo", v1.UpdateUserInfo)
 	GE.POST("/user/getUserInfoList", v1.GetUserInfoList)
+	GE.POST("/user/getUserInfo", v1.GetUserInfo)
+	GE.POST("/user/ableUsers", v1.AbleUsers)
+	GE.POST("/user/disableUsers", v1.DisableUsers)
+	GE.POST("/user/deleteUsers", v1.DeleteUsers)
+	GE.POST("/user/setAdmin", v1.SetAdmin)
 	GE.POST("/group/createGroup", v1.CreateGroup)
 	GE.POST("/group/loadMyGroup", v1.LoadMyGroup)
 	GE.POST("/group/checkGroupAddMode", v1.CheckGroupAddMode)

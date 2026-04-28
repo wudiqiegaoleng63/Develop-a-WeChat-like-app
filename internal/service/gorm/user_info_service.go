@@ -29,6 +29,9 @@ type UserInfoServiceInterface interface {
 	GetUserInfo(uuid string) (string, *respond.GetUserInfoRespond, int)
 	GetUserInfoList(ownerId string) (string, []respond.GetUserListRespond, int)
 	SetAdmin(uuidList []string, isAdmin int8) (string, int)
+	AbleUsers(uuidList []string) (string, int)
+	DisableUsers(uuidList []string) (string, int)
+	DeleteUsers(uuidList []string) (string, int)
 }
 
 // userInfoService - 服务结构体 要返回的结构体 实现以上所有方法
@@ -365,5 +368,155 @@ func (u *userInfoService) SetAdmin(uuidList []string, isAdmin int8) (string, int
 		}
 	}
 	return "设置管理员成功", 0
+}
+
+// ============================================================
+// AbleUsers - 启用用户（管理员）
+// ============================================================
+func (u *userInfoService) AbleUsers(uuidList []string) (string, int) {
+	var users []model.UserInfo
+	if res := dao.GormDB.Model(model.UserInfo{}).Where("uuid in (?)", uuidList).Find(&users); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+	for _, user := range users {
+		user.Status = user_status_enum.NORMAL
+		if res := dao.GormDB.Save(&user); res.Error != nil {
+			zlog.Error(res.Error.Error())
+			return constants.SYSTEM_ERROR, -1
+		}
+	}
+	// ★Redis缓存清理（当前代码被注释，暂不启用）
+	// 删除所有"contact_user_list"开头的key
+	//if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
+	//	zlog.Error(err.Error())
+	//}
+	return "启用用户成功", 0
+}
+
+// ============================================================
+// DisableUsers - 禁用用户（管理员）
+// ============================================================
+func (u *userInfoService) DisableUsers(uuidList []string) (string, int) {
+	var users []model.UserInfo
+	if res := dao.GormDB.Model(model.UserInfo{}).Where("uuid in (?)", uuidList).Find(&users); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+	for _, user := range users {
+		user.Status = user_status_enum.DISABLE
+		if res := dao.GormDB.Save(&user); res.Error != nil {
+			zlog.Error(res.Error.Error())
+			return constants.SYSTEM_ERROR, -1
+		}
+		// 禁用时同步删除会话
+		var sessionList []model.Session
+		if res := dao.GormDB.Where("send_id = ? or receive_id = ?", user.Uuid, user.Uuid).Find(&sessionList); res.Error != nil {
+			zlog.Error(res.Error.Error())
+			return constants.SYSTEM_ERROR, -1
+		}
+		for _, session := range sessionList {
+			var deletedAt gorm.DeletedAt
+			deletedAt.Time = time.Now()
+			deletedAt.Valid = true
+			session.DeletedAt = deletedAt
+			if res := dao.GormDB.Save(&session); res.Error != nil {
+				zlog.Error(res.Error.Error())
+				return constants.SYSTEM_ERROR, -1
+			}
+		}
+	}
+	// ★Redis缓存清理（当前代码被注释，暂不启用）
+	//if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
+	//	zlog.Error(err.Error())
+	//}
+	return "禁用用户成功", 0
+}
+
+// ============================================================
+// DeleteUsers - 删除用户（管理员，软删除）
+// ============================================================
+func (u *userInfoService) DeleteUsers(uuidList []string) (string, int) {
+	var users []model.UserInfo
+	if res := dao.GormDB.Model(model.UserInfo{}).Where("uuid in (?)", uuidList).Find(&users); res.Error != nil {
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+	for _, user := range users {
+		user.DeletedAt.Valid = true
+		user.DeletedAt.Time = time.Now()
+		if res := dao.GormDB.Save(&user); res.Error != nil {
+			zlog.Error(res.Error.Error())
+			return constants.SYSTEM_ERROR, -1
+		}
+
+		// 删除会话
+		var sessionList []model.Session
+		if res := dao.GormDB.Where("send_id = ? or receive_id = ?", user.Uuid, user.Uuid).Find(&sessionList); res.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				zlog.Info(res.Error.Error())
+			} else {
+				zlog.Error(res.Error.Error())
+				return constants.SYSTEM_ERROR, -1
+			}
+		}
+		for _, session := range sessionList {
+			var deletedAt gorm.DeletedAt
+			deletedAt.Time = time.Now()
+			deletedAt.Valid = true
+			session.DeletedAt = deletedAt
+			if res := dao.GormDB.Save(&session); res.Error != nil {
+				zlog.Error(res.Error.Error())
+				return constants.SYSTEM_ERROR, -1
+			}
+		}
+
+		// 删除联系人
+		var contactList []model.UserContact
+		if res := dao.GormDB.Where("user_id = ? or contact_id = ?", user.Uuid, user.Uuid).Find(&contactList); res.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				zlog.Info(res.Error.Error())
+			} else {
+				zlog.Error(res.Error.Error())
+				return constants.SYSTEM_ERROR, -1
+			}
+		}
+		for _, contact := range contactList {
+			var deletedAt gorm.DeletedAt
+			deletedAt.Time = time.Now()
+			deletedAt.Valid = true
+			contact.DeletedAt = deletedAt
+			if res := dao.GormDB.Save(&contact); res.Error != nil {
+				zlog.Error(res.Error.Error())
+				return constants.SYSTEM_ERROR, -1
+			}
+		}
+
+		// 删除申请记录
+		var applyList []model.ContactApply
+		if res := dao.GormDB.Where("user_id = ? or contact_id = ?", user.Uuid, user.Uuid).Find(&applyList); res.Error != nil {
+			if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+				zlog.Info(res.Error.Error())
+			} else {
+				zlog.Error(res.Error.Error())
+				return constants.SYSTEM_ERROR, -1
+			}
+		}
+		for _, apply := range applyList {
+			var deletedAt gorm.DeletedAt
+			deletedAt.Time = time.Now()
+			deletedAt.Valid = true
+			apply.DeletedAt = deletedAt
+			if res := dao.GormDB.Save(&apply); res.Error != nil {
+				zlog.Error(res.Error.Error())
+				return constants.SYSTEM_ERROR, -1
+			}
+		}
+	}
+	// ★Redis缓存清理（当前代码被注释，暂不启用）
+	//if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
+	//	zlog.Error(err.Error())
+	//}
+	return "删除用户成功", 0
 }
 
