@@ -228,11 +228,94 @@ go build ./...
 22. 管理员消息管理接口
 23. 接口汇总与测试
 
+## 前端项目
+
+前端项目位于 `web/chat-server/` 目录。
+
+### 技术栈
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Vue | 3.2.13 | 前端框架 |
+| Vue Router | 4.0.3 | 路由管理 |
+| Vuex | 4.0.0 | 状态管理 |
+| Element Plus | 2.9.0 | UI组件库 |
+| Axios | 1.7.9 | HTTP请求 |
+| Vue CLI | 5.0.0 | 构建工具 |
+
+### 项目结构
+
+```
+web/chat-server/
+├── src/
+│   ├── assets/           # 静态资源
+│   │   ├── css/          # 样式文件
+│   │   ├── img/          # 图片资源
+│   │   └ js/             # 工具函数
+│   ├── components/       # 公共组件
+│   │   ├── Modal.vue         # 弹窗组件
+│   │   ├── SmallModal.vue    # 小弹窗组件
+│   │   ├── ContactListModal.vue    # 联系人列表弹窗
+│   │   ├── DeleteUserModal.vue     # 删除用户弹窗
+│   │   ├── DeleteGroupModal.vue    # 删除群聊弹窗
+│   │   ├── DisableUserModal.vue    # 禁用用户弹窗
+│   │   ├── DisableGroupModal.vue   # 禁用群聊弹窗
+│   │   ├── SetAdminModal.vue       # 设置管理员弹窗
+│   │   └ NavigationModal.vue       # 导航弹窗
+│   ├── views/            # 页面视图
+│   │   ├── access/       # 访问页面
+│   │   │   ├── Login.vue       # 登录页
+│   │   │   ├── Register.vue    # 注册页
+│   │   │   ├── EmailLogin.vue  # 邮箱登录页
+│   │   ├── chat/         # 聊天页面
+│   │   │   ├── user/OwnInfo.vue        # 个人信息页
+│   │   │   ├── contact/ContactList.vue # 联系人列表页
+│   │   │   ├── contact/ContactChat.vue # 联系人聊天页
+│   │   │   ├── session/SessionList.vue # 会话列表页
+│   │   │   ├── manager/Manager.vue     # 管理员页面
+│   ├── router/           # 路由配置
+│   ├── store/            # Vuex状态管理
+│   ├── App.vue           # 根组件
+│   └ main.js             # 入口文件
+├── package.json          # 依赖配置
+```
+
+### 路由配置
+
+| 路由 | 名称 | 说明 |
+|------|------|------|
+| `/login` | Login | 登录页 |
+| `/emailLogin` | EmailLogin | 邮箱验证码登录 |
+| `/register` | Register | 注册页 |
+| `/chat/owninfo` | OwnInfo | 个人信息 |
+| `/chat/contactlist` | ContactList | 联系人列表 |
+| `/chat/:id` | ContactChat | 联系人聊天 |
+| `/chat/sessionList` | SessionList | 会话列表 |
+| `/manager` | Manager | 管理员后台 |
+
+### 启动前端
+
+```bash
+cd web/chat-server
+
+# 安装依赖
+npm install
+
+# 开发模式启动
+npm run serve
+
+# 生产构建
+npm run build
+```
+
+前端默认运行在 `http://localhost:8080`，会自动代理到后端 `http://127.0.0.1:8000`。
+
 ## 开发环境
 
 - Go 1.26.1+
 - MySQL 8.0+
 - Redis 6.0+
+- Node.js 16.0+
 - IDE: VS Code / GoLand
 
 ## License
