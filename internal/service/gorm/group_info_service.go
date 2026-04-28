@@ -773,11 +773,11 @@ func (g *groupInfoService) SetGroupsStatus(uuidList []string, status int8) (stri
     }
 
     // ★3. Redis缓存清理（当前代码被注释，暂不启用）
-    //for _, uuid := range uuidList {
-    //    if err := myredis.DelKeysWithPattern("group_info_" + uuid); err != nil {
-    //        zlog.Error(err.Error())
-    //    }
-    //}
+    for _, uuid := range uuidList {
+       if err := myredis.DelKeysWithPattern("group_info_" + uuid); err != nil {
+           zlog.Error(err.Error())
+       }
+    }
 
     return "设置成功", 0
 }
