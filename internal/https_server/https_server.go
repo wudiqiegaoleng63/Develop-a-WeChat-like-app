@@ -66,6 +66,12 @@ func registerRoutes() {
 	GE.POST("/contact/deleteContact", v1.DeleteContact)
 	GE.POST("/contact/blackContact", v1.BlackContact)
 	GE.POST("/contact/cancelBlackContact", v1.CancelBlackContact)
+	GE.POST("/contact/applyContact", v1.ApplyContact)              // 申请添加联系人
+    GE.POST("/contact/getNewContactList", v1.GetNewContactList)    // 获取新联系人申请列表
+    GE.POST("/contact/passContactApply", v1.PassContactApply)      // 通过联系人申请
+    GE.POST("/contact/refuseContactApply", v1.RefuseContactApply)  // 拒绝联系人申请
+    GE.POST("/contact/blackApply", v1.BlackApply)                  // 拉黑申请人
+    GE.POST("/contact/getAddGroupList", v1.GetAddGroupList)        // 获取进群申请列表
 
 }
 
