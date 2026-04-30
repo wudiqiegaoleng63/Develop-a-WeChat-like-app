@@ -46,7 +46,7 @@ Model → DAO → Service → Controller → 路由注册 → WebSocket → Kafk
 
 | 概念 | 说明 | 本项目应用 |
 |------|------|-----------|
-| **Topic** | 消息主题，消息分类 | `chat_message` 聊天消息主题 |
+| **Topic** | 消息主题，消息分类 | `chat_message` 聊天消息主题、`login` 登录主题、`logout` 登出主题 |
 | **Partition** | 分区，消息有序存储 | 单分区，消息按时间顺序 |
 | **Producer** | 生产者，写入消息 | Client发送消息 → 写入Kafka |
 | **Consumer** | 消费者，读取消息 | Server从Kafka读取 → 转发 |
@@ -68,11 +68,67 @@ Client3 ─写消息──→ │ │ Message 3      │ │
 
 ---
 
-## 三、Kafka服务文件
+## 三、Kafka配置添加
+
+### 更新config_local.toml
+
+```toml
+# ----------------------
+# [kafkaConfig] Kafka配置
+# ----------------------
+[kafkaConfig]
+messageMode = "channel"          # 消息模式：channel 或 kafka
+hostPort = "127.0.0.1:9092"      # Kafka地址，多个服务器用逗号分隔
+loginTopic = "login"             # 登录Topic
+chatTopic = "chat_message"       # 聊天消息Topic
+logoutTopic = "logout"           # 登出Topic
+partition = 0                    # 分区号
+timeout = 1                      # 超时秒数，单位秒
+```
+
+### 更新config.go
+
+```go
+// internal/config/config.go
+
+// KafkaConfig - Kafka配置
+type KafkaConfig struct {
+    MessageMode string        `toml:"messageMode"` // channel 或 kafka
+    HostPort    string        `toml:"hostPort"`    // Kafka地址
+    LoginTopic  string        `toml:"loginTopic"`  // 登录Topic
+    ChatTopic   string        `toml:"chatTopic"`   // 聊天消息Topic
+    LogoutTopic string        `toml:"logoutTopic"` // 登出Topic
+    Partition   int           `toml:"partition"`   // 分区号
+    Timeout     time.Duration `toml:"timeout"`     // 超时秒数
+}
+
+// Config - 总配置结构体
+type Config struct {
+    MainConfig      `toml:"mainConfig"`
+    MysqlConfig     `toml:"mysqlConfig"`
+    RedisConfig     `toml:"redisConfig"`
+    AuthCodeConfig  `toml:"authCodeConfig"`
+    LogConfig       `toml:"logConfig"`
+    KafkaConfig     `toml:"kafkaConfig"`  // ★新增
+    StaticSrcConfig `toml:"staticSrcConfig"`
+}
+```
+
+### 导入time包
+
+```go
+import (
+    "github.com/BurntSushi/toml"
+    "log"
+    "time"  // ★KafkaConfig.Timeout使用time.Duration类型
+)
+```
+
+---
+
+## 四、Kafka服务文件
 
 **文件位置:** `internal/service/kafka/kafka_service.go`
-
-根据文档 `4.后端开发.md` 和 `7.项目优化的点.md`：
 
 ### 完整代码（带详细注释）
 
@@ -90,105 +146,115 @@ import (
     "github.com/segmentio/kafka-go"
     
     // ★项目内部依赖
-    "kama-chat-server/internal/config"
-    "kama-chat-server/pkg/zlog"
+    myconfig "kama_chat_server/internal/config"
+    "kama_chat_server/pkg/zlog"
 )
+
+// ============================================================
+// 全局上下文
+// ============================================================
+var ctx = context.Background()
 
 // ============================================================
 // Kafka服务结构体
 // ============================================================
-// ★包含生产者和消费者
 type kafkaService struct {
     ChatWriter *kafka.Writer  // 生产者：写入消息
     ChatReader *kafka.Reader  // 消费者：读取消息
+    KafkaConn  *kafka.Conn    // Kafka连接（用于创建Topic）
 }
 
 // ============================================================
 // 全局Kafka服务实例
 // ============================================================
-var KafkaService *kafkaService
-var ctx = context.Background()
+var KafkaService = new(kafkaService)
 
 // ============================================================
-// InitKafka - 初始化Kafka服务
+// KafkaInit - 初始化Kafka服务
 // ============================================================
-// ★在main.go或https_server.init()中调用
-func InitKafka() {
-    // 1. 获取配置
-    conf := config.GetConfig()
+// ★在main.go中根据messageMode配置决定是否调用
+func (k *kafkaService) KafkaInit() {
+    //k.CreateTopic()  // 已有Topic时不需要重复创建
     
-    // 2. 创建Writer（生产者）
-    // ★kafka.Writer: 生产者配置
-    KafkaService = &kafkaService{
-        ChatWriter: &kafka.Writer{
-            Addr:                   kafka.TCP(conf.KafkaConfig.HostPort),  // Kafka地址
-            Topic:                  conf.KafkaConfig.ChatTopic,            // Topic名称
-            Balancer:               &kafka.Hash{},                         // 分区策略
-            WriteTimeout:           time.Duration(conf.KafkaConfig.Timeout) * time.Second,
-            RequiredAcks:          kafka.RequireNone,                      // ★确认模式
-            AllowAutoTopicCreation: false,                                  // 不自动创建Topic
+    kafkaConfig := myconfig.GetConfig().KafkaConfig
+    
+    // 创建Writer（生产者）
+    k.ChatWriter = &kafka.Writer{
+        Addr:                   kafka.TCP(kafkaConfig.HostPort),
+        Topic:                  kafkaConfig.ChatTopic,
+        Balancer:               &kafka.Hash{},
+        WriteTimeout:           kafkaConfig.Timeout * time.Second,
+        RequiredAcks:           kafka.RequireNone,
+        AllowAutoTopicCreation: false,
+    }
+    
+    // 创建Reader（消费者）
+    k.ChatReader = kafka.NewReader(kafka.ReaderConfig{
+        Brokers:        []string{kafkaConfig.HostPort},
+        Topic:          kafkaConfig.ChatTopic,
+        CommitInterval: kafkaConfig.Timeout * time.Second,
+        GroupID:        "chat",
+        StartOffset:    kafka.LastOffset,
+    })
+}
+
+// ============================================================
+// KafkaClose - 关闭Kafka服务
+// ============================================================
+func (k *kafkaService) KafkaClose() {
+    if err := k.ChatWriter.Close(); err != nil {
+        zlog.Error(err.Error())
+    }
+    if err := k.ChatReader.Close(); err != nil {
+        zlog.Error(err.Error())
+    }
+}
+
+// ============================================================
+// CreateTopic - 创建Topic
+// ============================================================
+// 如果已经有Topic了，就不创建了。只能执行1次，再次创建会报错。
+func (k *kafkaService) CreateTopic() {
+    kafkaConfig := myconfig.GetConfig().KafkaConfig
+    chatTopic := kafkaConfig.ChatTopic
+    
+    // 连接至任意kafka节点
+    var err error
+    k.KafkaConn, err = kafka.Dial("tcp", kafkaConfig.HostPort)
+    if err != nil {
+        zlog.Error(err.Error())
+    }
+    
+    topicConfigs := []kafka.TopicConfig{
+        {
+            Topic:             chatTopic,
+            NumPartitions:     kafkaConfig.Partition,
+            ReplicationFactor: 1,
         },
     }
     
-    // 3. 创建Reader（消费者）
-    // ★kafka.Reader: 消费者配置
-    KafkaService.ChatReader = kafka.NewReader(kafka.ReaderConfig{
-        Brokers:        []string{conf.KafkaConfig.HostPort},  // Kafka地址列表
-        Topic:          conf.KafkaConfig.ChatTopic,           // Topic名称
-        CommitInterval: time.Duration(conf.KafkaConfig.Timeout) * time.Second,
-        GroupID:        "chat",                               // ★消费者组ID
-        StartOffset:    kafka.LastOffset,                     // ★从最新消息开始
-    })
-    
-    zlog.Info("Kafka服务初始化成功")
+    // 创建topic
+    if err = k.KafkaConn.CreateTopics(topicConfigs...); err != nil {
+        zlog.Error(err.Error())
+    }
 }
+```
 
-// ============================================================
-// WriteMessage - 写入消息到Kafka
-// ============================================================
-// ★Client发送消息时调用
-func WriteMessage(message []byte) error {
-    // 1. 获取分区号
-    conf := config.GetConfig()
-    partition := conf.KafkaConfig.Partition
-    
-    // 2. 构建Kafka消息
-    // ★kafka.Message: 消息结构
-    kafkaMsg := kafka.Message{
-        Key:   []byte(strconv.Itoa(partition)),  // Key用于分区路由
-        Value: message,                          // Value是消息内容（JSON）
-    }
-    
-    // 3. 写入Kafka
-    // ★ChatWriter.WriteMessages: 批量写入
-    err := KafkaService.ChatWriter.WriteMessages(ctx, kafkaMsg)
-    if err != nil {
-        zlog.Error("Kafka写入失败: " + err.Error())
-        return err
-    }
-    
-    return nil
-}
+### 导入路径说明
 
-// ============================================================
-// ReadMessage - 从Kafka读取消息
-// ============================================================
-// ★Server启动时在协程中调用
-func ReadMessage() (kafka.Message, error) {
-    // ★ChatReader.ReadMessage: 读取一条消息（阻塞）
-    msg, err := KafkaService.ChatReader.ReadMessage(ctx)
-    if err != nil {
-        zlog.Error("Kafka读取失败: " + err.Error())
-        return kafka.Message{}, err
-    }
-    
-    return msg, nil
-}
+```go
+import (
+    "context"
+    "time"
+    "github.com/segmentio/kafka-go"
+    myconfig "kama_chat_server/internal/config"  // ★用别名避免与config包名冲突
+    "kama_chat_server/pkg/zlog"
+)
 ```
 
 ---
 
-## 四、RequiredAcks详解
+## 五、RequiredAcks详解
 
 ### 确认模式
 
@@ -218,7 +284,7 @@ RequiredAcks: kafka.RequireNone  // 当前配置
 
 ---
 
-## 五、StartOffset详解
+## 六、StartOffset详解
 
 ### 偏移量模式
 
@@ -245,51 +311,9 @@ Server启动时:
 
 ---
 
-## 六、Kafka配置添加
-
-### 更新config_local.toml
-
-```toml
-# ----------------------
-# [kafkaConfig] Kafka配置
-# ----------------------
-[kafkaConfig]
-messageMode = "kafka"          # channel 或 kafka
-hostPort = "127.0.0.1:9092"    # Kafka地址
-chatTopic = "chat_message"     # Topic名称
-partition = 0                  # 分区号
-timeout = 1                    # 超时秒数
-```
-
-### 更新config.go
-
-```go
-// KafkaConfig - Kafka配置
-type KafkaConfig struct {
-    MessageMode string `toml:"messageMode"` // channel 或 kafka
-    HostPort    string `toml:"hostPort"`    // Kafka地址
-    ChatTopic   string `toml:"chatTopic"`   // Topic名称
-    Partition   int    `toml:"partition"`   // 分区号
-    Timeout     int    `toml:"timeout"`     // 超时秒数
-}
-
-// Config - 总配置结构体
-type Config struct {
-    MainConfig   MainConfig   `toml:"mainConfig"`
-    MysqlConfig  MysqlConfig  `toml:"mysqlConfig"`
-    RedisConfig  RedisConfig  `toml:"redisConfig"`
-    KafkaConfig  KafkaConfig  `toml:"kafkaConfig"`  // ★新增
-    LogConfig    LogConfig    `toml:"logConfig"`
-}
-```
-
----
-
 ## 七、Channel模式 vs Kafka模式
 
 ### 模式对比
-
-文档原文（`7.项目优化的点.md`）：
 
 ```
 messageMode配置:
@@ -356,49 +380,219 @@ Kafka Topic容量无限，不阻塞
                                      └─────────────────┘ └─────────────────┘
 ```
 
-### Client.Read() - 写入Kafka
+### Client.Read() - 根据messageMode写入Kafka或Channel
 
 ```go
-// WebSocket Client读取消息 → 写入Kafka
+// internal/service/chat/client.go
+
+// Client结构体
+type Client struct {
+    Conn     *websocket.Conn
+    Uuid     string
+    SendTo   chan []byte       // 给server端（Channel模式用）
+    SendBack chan *MessageBack // 给前端
+}
+
+// 读取websocket消息，根据mode选择写入Kafka还是Channel
 func (c *Client) Read() {
     for {
-        // 1. 从WebSocket读取消息（阻塞）
         _, jsonMessage, err := c.Conn.ReadMessage()
         if err != nil {
-            c.Conn.Close()
+            zlog.Error(err.Error())
             return
         }
         
-        // 2. ★写入Kafka
-        kafka.KafkaService.WriteMessage(jsonMessage)
+        var message = request.ChatMessageRequest{}
+        if err := json.Unmarshal(jsonMessage, &message); err != nil {
+            zlog.Error(err.Error())
+        }
+        
+        if messageMode == "channel" {
+            // Channel模式：写入Server的Transmit通道
+            for len(ChatServer.Transmit) < constants.CHANNEL_SIZE && len(c.SendTo) > 0 {
+                sendToMessage := <-c.SendTo
+                ChatServer.SendMessageToTransmit(sendToMessage)
+            }
+            if len(ChatServer.Transmit) < constants.CHANNEL_SIZE {
+                ChatServer.SendMessageToTransmit(jsonMessage)
+            } else if len(c.SendTo) < constants.CHANNEL_SIZE {
+                c.SendTo <- jsonMessage
+            } else {
+                // Channel满了，提示用户
+                c.Conn.WriteMessage(websocket.TextMessage, []byte("由于目前同一时间过多用户发送消息，消息发送失败，请稍后重试"))
+            }
+        } else {
+            // Kafka模式：直接写入Kafka Topic
+            KafkaService.ChatWriter.WriteMessages(ctx, kafka.Message{
+                Key:   []byte(strconv.Itoa(config.GetConfig().KafkaConfig.Partition)),
+                Value: jsonMessage,
+            })
+        }
     }
 }
 ```
 
-### Server消费Kafka
+### KafkaServer.Start() - 消费Kafka消息
 
 ```go
-// Server消费Kafka消息
+// internal/service/chat/kafka_server.go
+
+type KafkaServer struct {
+    Clients map[string]*Client
+    mutex   *sync.Mutex
+    Login   chan *Client  // 登录通道
+    Logout  chan *Client  // 退出登录通道
+}
+
+var KafkaChatServer *KafkaServer
+
 func (k *KafkaServer) Start() {
-    // ★启动Kafka消费协程
+    // ★启动Kafka消费协程：读取chat_message Topic
     go func() {
         for {
-            // 1. 从Kafka读取消息（阻塞）
-            kafkaMessage, err := kafka.KafkaService.ReadMessage()
+            kafkaMessage, err := kafka.KafkaService.ChatReader.ReadMessage(ctx)
             if err != nil {
-                continue
+                zlog.Error(err.Error())
             }
             
-            // 2. 处理消息（存储 + 转发）
-            HandleMessage(kafkaMessage.Value)
+            data := kafkaMessage.Value
+            var chatMessageReq request.ChatMessageRequest
+            if err := json.Unmarshal(data, &chatMessageReq); err != nil {
+                zlog.Error(err.Error())
+            }
+            
+            // 根据消息类型处理
+            if chatMessageReq.Type == message_type_enum.Text {
+                // 1. 存Message到数据库
+                message := model.Message{...}
+                dao.GormDB.Create(&message)
+                
+                // 2. 判断是私聊还是群聊（receive_id[0] == 'U' 或 'G'）
+                // 3. 转发给在线用户（通过SendBack通道）
+                // 4. 更新Redis缓存
+            } else if chatMessageReq.Type == message_type_enum.File {
+                // 处理文件消息...
+            } else if chatMessageReq.Type == message_type_enum.AudioOrVideo {
+                // 处理音视频通话消息...
+            }
         }
     }()
+    
+    // ★处理登录/登出
+    for {
+        select {
+        case client := <-k.Login:
+            k.mutex.Lock()
+            k.Clients[client.Uuid] = client
+            k.mutex.Unlock()
+            
+        case client := <-k.Logout:
+            k.mutex.Lock()
+            delete(k.Clients, client.Uuid)
+            k.mutex.Unlock()
+        }
+    }
 }
 ```
 
 ---
 
-## 九、创建Kafka Topic
+## 九、main.go 中Kafka的初始化与关闭
+
+### main.go完整代码
+
+```go
+// cmd/kama-chat-server/main.go
+package main
+
+import (
+    "fmt"
+    "kama_chat_server/internal/config"
+    "kama_chat_server/internal/https_server"
+    "kama_chat_server/internal/service/chat"
+    "kama_chat_server/internal/service/kafka"
+    myredis "kama_chat_server/internal/service/redis"
+    "kama_chat_server/pkg/zlog"
+    "os"
+    "os/signal"
+    "syscall"
+)
+
+func main() {
+    conf := config.GetConfig()
+    host := conf.MainConfig.Host
+    port := conf.MainConfig.Port
+    kafkaConfig := conf.KafkaConfig
+    
+    // ★根据messageMode决定是否初始化Kafka
+    if kafkaConfig.MessageMode == "kafka" {
+        kafka.KafkaService.KafkaInit()
+    }
+    
+    // ★根据messageMode选择启动Channel或Kafka Server
+    if kafkaConfig.MessageMode == "channel" {
+        go chat.ChatServer.Start()
+    } else {
+        go chat.KafkaChatServer.Start()
+    }
+    
+    // 启动HTTP服务器（TLS）
+    go func() {
+        if err := https_server.GE.RunTLS(fmt.Sprintf("%s:%d", host, port), "证书路径", "密钥路径"); err != nil {
+            zlog.Fatal("server running fault")
+            return
+        }
+    }()
+    
+    // ★等待信号，优雅关闭
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+    <-quit
+    
+    // ★关闭Kafka服务
+    if kafkaConfig.MessageMode == "kafka" {
+        kafka.KafkaService.KafkaClose()
+    }
+    
+    chat.ChatServer.Close()
+    zlog.Info("关闭服务器...")
+    
+    // 删除所有Redis键
+    if err := myredis.DeleteAllRedisKeys(); err != nil {
+        zlog.Error(err.Error())
+    }
+    
+    zlog.Info("服务器已关闭")
+}
+```
+
+---
+
+## 十、KafkaServer vs Channel Server 对比
+
+### Server结构体对比
+
+| 项目 | Channel Server | Kafka Server |
+|------|---------------|-------------|
+| 文件 | `internal/service/chat/server.go` | `internal/service/chat/kafka_server.go` |
+| Transmit通道 | `Transmit chan []byte` | ❌ 无（Kafka代替） |
+| Login通道 | `Login chan *Client` | `Login chan *Client` |
+| Logout通道 | `Logout chan *Client` | `Logout chan *Client` |
+| 消息处理 | `case data := <-s.Transmit` | `kafka.KafkaService.ChatReader.ReadMessage()` |
+
+### 核心差异
+
+```
+Channel Server:
+Client.Read() → Server.Transmit → Server处理 → Server转发
+
+Kafka Server:
+Client.Read() → Kafka Topic → KafkaServer.ReadMessage() → KafkaServer处理 → 转发
+```
+
+---
+
+## 十一、创建Kafka Topic
 
 ### 安装Kafka
 
@@ -434,26 +628,11 @@ bin/windows/kafka-topics.bat --create \
     --replication-factor 1
 ```
 
-### ★CreateTopic函数说明
-
-参考文档还提供了CreateTopic函数（行715-742），可通过代码创建Topic:
-
-```go
-// CreateTopic 创建topic
-func (k *kafkaService) CreateTopic() {
-    // 如果已经有topic了，就不创建了
-    kafkaConfig := myconfig.GetConfig().KafkaConfig
-    k.KafkaConn, err = kafka.Dial("tcp", kafkaConfig.HostPort)
-    // ... 配置并创建Topic
-}
-```
-
-注意: CreateTopic只能执行1次，当已创建该Topic后，再次创建会报错。
-本教程采用手动创建方式。
+注意: CreateTopic函数只能执行1次，当已创建该Topic后，再次创建会报错。本教程采用手动创建方式。
 
 ---
 
-## 十、安装依赖
+## 十二、安装依赖
 
 ```bash
 go get github.com/segmentio/kafka-go
@@ -461,7 +640,7 @@ go get github.com/segmentio/kafka-go
 
 ---
 
-## 十一、创建文件步骤
+## 十三、创建文件步骤
 
 ### 步骤1: 安装并启动Kafka
 
@@ -469,7 +648,7 @@ go get github.com/segmentio/kafka-go
 
 ### 步骤2: 创建Topic
 
-创建 `chat_message` Topic
+创建 `chat_message`、`login`、`logout` Topic
 
 ### 步骤3: 更新配置文件
 
@@ -477,16 +656,20 @@ go get github.com/segmentio/kafka-go
 
 ### 步骤4: 更新config.go
 
-添加KafkaConfig结构体
+添加KafkaConfig结构体（含LoginTopic、LogoutTopic字段）
 
 ### 步骤5: 创建Kafka服务
 
 创建 `internal/service/kafka/kafka_service.go`
 
+### 步骤6: 更新main.go
+
+添加Kafka初始化和关闭逻辑
+
 ---
 
-## 十二、下一步
+## 十四、下一步
 
 Kafka消息队列理解后，继续学习：
-- **19-WebSocket高并发.md** - WebSocket Server和Client实现
-- **20-聊天室管理.md** - 聊天室功能实现
+- **20-WebSocket高并发.md** - WebSocket Server和Client实现
+- **21-聊天室管理.md** - 聊天室功能实现

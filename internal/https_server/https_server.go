@@ -77,6 +77,10 @@ func registerRoutes() {
     GE.POST("/contact/refuseContactApply", v1.RefuseContactApply)  // 拒绝联系人申请
     GE.POST("/contact/blackApply", v1.BlackApply)                  // 拉黑申请人
     GE.POST("/contact/getAddGroupList", v1.GetAddGroupList)        // 获取进群申请列表
+	GE.POST("/message/getMessageList", v1.GetMessageList)          // 获取私聊消息列表
+	GE.POST("/message/getGroupMessageList", v1.GetGroupMessageList) // 获取群聊消息列表
+	GE.POST("/message/uploadAvatar", v1.UploadAvatar)              // 上传头像
+	GE.POST("/message/uploadFile", v1.UploadFile)                  // 上传文件
 
 }
 
