@@ -135,44 +135,32 @@ import (
 ```go
 package kafka
 
-// ============================================================
-// 导入依赖包
-// ============================================================
 import (
     "context"
     "time"
-    
-    // ★Kafka Go客户端库
     "github.com/segmentio/kafka-go"
-    
-    // ★项目内部依赖
     myconfig "kama_chat_server/internal/config"
     "kama_chat_server/pkg/zlog"
 )
 
-// ============================================================
 // 全局上下文
-// ============================================================
 var ctx = context.Background()
 
-// ============================================================
 // Kafka服务结构体
-// ============================================================
+// ChatWriter: 生产者，写入消息
+// ChatReader: 消费者，读取消息
+// KafkaConn: Kafka连接，用于创建Topic
 type kafkaService struct {
-    ChatWriter *kafka.Writer  // 生产者：写入消息
-    ChatReader *kafka.Reader  // 消费者：读取消息
-    KafkaConn  *kafka.Conn    // Kafka连接（用于创建Topic）
+    ChatWriter *kafka.Writer
+    ChatReader *kafka.Reader
+    KafkaConn  *kafka.Conn
 }
 
-// ============================================================
 // 全局Kafka服务实例
-// ============================================================
 var KafkaService = new(kafkaService)
 
-// ============================================================
-// KafkaInit - 初始化Kafka服务
-// ============================================================
-// ★在main.go中根据messageMode配置决定是否调用
+// KafkaInit 初始化Kafka服务
+// 在main.go中根据messageMode配置决定是否调用
 func (k *kafkaService) KafkaInit() {
     //k.CreateTopic()  // 已有Topic时不需要重复创建
     
@@ -198,9 +186,7 @@ func (k *kafkaService) KafkaInit() {
     })
 }
 
-// ============================================================
-// KafkaClose - 关闭Kafka服务
-// ============================================================
+// KafkaClose 关闭Kafka服务
 func (k *kafkaService) KafkaClose() {
     if err := k.ChatWriter.Close(); err != nil {
         zlog.Error(err.Error())
@@ -210,9 +196,7 @@ func (k *kafkaService) KafkaClose() {
     }
 }
 
-// ============================================================
-// CreateTopic - 创建Topic
-// ============================================================
+// CreateTopic 创建Topic
 // 如果已经有Topic了，就不创建了。只能执行1次，再次创建会报错。
 func (k *kafkaService) CreateTopic() {
     kafkaConfig := myconfig.GetConfig().KafkaConfig
@@ -324,31 +308,214 @@ messageMode配置:
 只需修改配置文件，代码自动适配
 ```
 
-### Channel模式代码
+### Channel模式 - Server结构体
+
+**文件位置:** `internal/service/chat/server.go`
 
 ```go
-// Channel模式（小规模）
+package chat
+
+import (
+    "encoding/json"
+    "errors"
+    "fmt"
+    "github.com/go-redis/redis/v8"
+    "github.com/gorilla/websocket"
+    "kama_chat_server/internal/dao"
+    "kama_chat_server/internal/dto/request"
+    "kama_chat_server/internal/dto/respond"
+    "kama_chat_server/internal/model"
+    myredis "kama_chat_server/internal/service/redis"
+    "kama_chat_server/pkg/constants"
+    "kama_chat_server/pkg/enum/message/message_status_enum"
+    "kama_chat_server/pkg/enum/message/message_type_enum"
+    "kama_chat_server/pkg/util/random"
+    "kama_chat_server/pkg/zlog"
+    "log"
+    "strings"
+    "sync"
+    "time"
+)
+
+// Server Channel模式服务器结构体
 type Server struct {
-    Transmit chan []byte  // 内存Channel
+    Clients  map[string]*Client  // 在线用户列表，key为用户UUID
+    mutex    *sync.Mutex         // 并发锁，保护Clients map
+    Transmit chan []byte         // 消息转发通道
+    Login    chan *Client        // 登录通道
+    Logout   chan *Client        // 退出登录通道
 }
 
-// 消息流转:
-Client → Transmit Channel → Server → 转发
+// ChatServer 全局Server实例
+var ChatServer *Server
 
-// 问题:
-Channel容量有限（如1000），高峰期阻塞
+func init() {
+    if ChatServer == nil {
+        ChatServer = &Server{
+            Clients:  make(map[string]*Client),
+            mutex:    &sync.Mutex{},
+            Transmit: make(chan []byte, constants.CHANNEL_SIZE),
+            Login:    make(chan *Client, constants.CHANNEL_SIZE),
+            Logout:   make(chan *Client, constants.CHANNEL_SIZE),
+        }
+    }
+}
+
+// Close 关闭Server
+func (s *Server) Close() {
+    close(s.Login)
+    close(s.Logout)
+    close(s.Transmit)
+}
+
+// SendClientToLogin 将Client发送到登录通道
+func (s *Server) SendClientToLogin(client *Client) {
+    s.mutex.Lock()
+    s.Login <- client
+    s.mutex.Unlock()
+}
+
+// SendClientToLogout 将Client发送到登出通道
+func (s *Server) SendClientToLogout(client *Client) {
+    s.mutex.Lock()
+    s.Logout <- client
+    s.mutex.Unlock()
+}
+
+// SendMessageToTransmit 将消息发送到转发通道
+func (s *Server) SendMessageToTransmit(message []byte) {
+    s.mutex.Lock()
+    s.Transmit <- message
+    s.mutex.Unlock()
+}
+
+// RemoveClient 从在线列表移除Client
+func (s *Server) RemoveClient(uuid string) {
+    s.mutex.Lock()
+    delete(s.Clients, uuid)
+    s.mutex.Unlock()
+}
 ```
 
-### Kafka模式代码
+### Channel模式消息流转
+
+```
+Client.Read() 
+    ↓ 写入
+ChatServer.Transmit (chan []byte)
+    ↓ Server.Start() 从channel读取
+case data := <-s.Transmit
+    ↓ 处理消息
+存数据库 → 转发给在线用户 → 更新Redis
+
+问题: Channel容量有限（constants.CHANNEL_SIZE），高峰期阻塞
+```
+
+### Kafka模式 - KafkaServer结构体
+
+**文件位置:** `internal/service/chat/kafka_server.go`
 
 ```go
-// Kafka模式（大规模）
-// 消息流转:
-Client → Kafka Topic → Server消费 → 转发
+package chat
 
-// 优势:
-Kafka Topic容量无限，不阻塞
+import (
+    "encoding/json"
+    "errors"
+    "fmt"
+    "github.com/go-redis/redis/v8"
+    "github.com/gorilla/websocket"
+    "kama_chat_server/internal/dao"
+    "kama_chat_server/internal/dto/request"
+    "kama_chat_server/internal/dto/respond"
+    "kama_chat_server/internal/model"
+    "kama_chat_server/internal/service/kafka"
+    myredis "kama_chat_server/internal/service/redis"
+    "kama_chat_server/pkg/constants"
+    "kama_chat_server/pkg/enum/message/message_status_enum"
+    "kama_chat_server/pkg/enum/message/message_type_enum"
+    "kama_chat_server/pkg/util/random"
+    "kama_chat_server/pkg/zlog"
+    "log"
+    "os"
+    "sync"
+    "time"
+)
+
+// KafkaServer Kafka模式服务器结构体
+type KafkaServer struct {
+    Clients map[string]*Client  // 在线用户列表，key为用户UUID
+    mutex   *sync.Mutex         // 并发锁，保护Clients map
+    Login   chan *Client        // 登录通道
+    Logout  chan *Client        // 退出登录通道
+}
+
+// KafkaChatServer 全局KafkaServer实例
+var KafkaChatServer *KafkaServer
+
+var kafkaQuit = make(chan os.Signal, 1)
+
+func init() {
+    if KafkaChatServer == nil {
+        KafkaChatServer = &KafkaServer{
+            Clients: make(map[string]*Client),
+            mutex:   &sync.Mutex{},
+            Login:   make(chan *Client),
+            Logout:  make(chan *Client),
+        }
+    }
+}
+
+// Close 关闭KafkaServer
+func (k *KafkaServer) Close() {
+    close(k.Login)
+    close(k.Logout)
+}
+
+// SendClientToLogin 将Client发送到登录通道
+func (k *KafkaServer) SendClientToLogin(client *Client) {
+    k.mutex.Lock()
+    k.Login <- client
+    k.mutex.Unlock()
+}
+
+// SendClientToLogout 将Client发送到登出通道
+func (k *KafkaServer) SendClientToLogout(client *Client) {
+    k.mutex.Lock()
+    k.Logout <- client
+    k.mutex.Unlock()
+}
+
+// RemoveClient 从在线列表移除Client
+func (k *KafkaServer) RemoveClient(uuid string) {
+    k.mutex.Lock()
+    delete(k.Clients, uuid)
+    k.mutex.Unlock()
+}
 ```
+
+### Kafka模式消息流转
+
+```
+Client.Read() 
+    ↓ 写入Kafka
+Kafka Topic (chat_message)
+    ↓ KafkaServer.Start() 消费
+kafka.KafkaService.ChatReader.ReadMessage(ctx)
+    ↓ 处理消息
+存数据库 → 转发给在线用户 → 更新Redis
+
+优势: Kafka Topic容量无限，不阻塞，支持分布式部署
+```
+
+### Server结构体对比
+
+| 项目 | Channel Server | Kafka Server |
+|------|---------------|-------------|
+| 文件 | `internal/service/chat/server.go` | `internal/service/chat/kafka_server.go` |
+| Transmit通道 | `Transmit chan []byte` | ❌ 无（Kafka代替） |
+| Login通道 | `Login chan *Client` | `Login chan *Client` |
+| Logout通道 | `Logout chan *Client` | `Logout chan *Client` |
+| 消息处理 | `case data := <-s.Transmit` | `kafka.KafkaService.ChatReader.ReadMessage()` |
 
 ---
 
@@ -380,10 +547,54 @@ Kafka Topic容量无限，不阻塞
                                      └─────────────────┘ └─────────────────┘
 ```
 
+### ChatMessageRequest - WebSocket消息结构体
+
+**文件位置:** `internal/dto/request/chat_message_request.go`
+
+```go
+package request
+
+// ChatMessageRequest WebSocket消息请求结构体
+// 前端通过WebSocket发送JSON消息，后端反序列化到此结构体
+type ChatMessageRequest struct {
+    SessionId  string `json:"session_id"`   // 会话ID
+    Type       int8   `json:"type"`          // 消息类型（0=文本, 1=语音, 2=文件, 3=通话）
+    Content    string `json:"content"`       // 文本内容
+    Url        string `json:"url"`           // 文件URL
+    SendId     string `json:"send_id"`       // 发送者UUID
+    SendName   string `json:"send_name"`     // 发送者昵称
+    SendAvatar string `json:"send_avatar"`   // 发送者头像
+    ReceiveId  string `json:"receive_id"`    // 接收者UUID（U开头=用户, G开头=群）
+    FileSize   string `json:"file_size"`     // 文件大小
+    FileType   string `json:"file_type"`     // 文件类型
+    FileName   string `json:"file_name"`     // 文件名
+    AVdata     string `json:"av_data"`       // 音视频通话数据
+}
+```
+
 ### Client.Read() - 根据messageMode写入Kafka或Channel
 
 ```go
 // internal/service/chat/client.go
+
+import (
+    "context"
+    "encoding/json"
+    "github.com/gin-gonic/gin"
+    "github.com/gorilla/websocket"
+    "github.com/segmentio/kafka-go"
+    "kama_chat_server/internal/config"
+    "kama_chat_server/internal/dao"
+    "kama_chat_server/internal/dto/request"
+    "kama_chat_server/internal/model"
+    myKafka "kama_chat_server/internal/service/kafka"
+    "kama_chat_server/pkg/constants"
+    "kama_chat_server/pkg/enum/message/message_status_enum"
+    "kama_chat_server/pkg/zlog"
+    "log"
+    "net/http"
+    "strconv"
+)
 
 // Client结构体
 type Client struct {
@@ -393,8 +604,26 @@ type Client struct {
     SendBack chan *MessageBack // 给前端
 }
 
+type MessageBack struct {
+    Message []byte
+    Uuid    string
+}
+
+var messageMode = config.GetConfig().KafkaConfig.MessageMode
+
+var ctx = context.Background()
+
+var upgrader = websocket.Upgrader{
+    ReadBufferSize:  2048,
+    WriteBufferSize: 2048,
+    CheckOrigin: func(r *http.Request) bool {
+        return true
+    },
+}
+
 // 读取websocket消息，根据mode选择写入Kafka还是Channel
 func (c *Client) Read() {
+    zlog.Info("ws read goroutine start")
     for {
         _, jsonMessage, err := c.Conn.ReadMessage()
         if err != nil {
@@ -406,6 +635,7 @@ func (c *Client) Read() {
         if err := json.Unmarshal(jsonMessage, &message); err != nil {
             zlog.Error(err.Error())
         }
+        log.Println("接受到消息为: ", jsonMessage)
         
         if messageMode == "channel" {
             // Channel模式：写入Server的Transmit通道
@@ -423,10 +653,13 @@ func (c *Client) Read() {
             }
         } else {
             // Kafka模式：直接写入Kafka Topic
-            KafkaService.ChatWriter.WriteMessages(ctx, kafka.Message{
+            if err := myKafka.KafkaService.ChatWriter.WriteMessages(ctx, kafka.Message{
                 Key:   []byte(strconv.Itoa(config.GetConfig().KafkaConfig.Partition)),
                 Value: jsonMessage,
-            })
+            }); err != nil {
+                zlog.Error(err.Error())
+            }
+            zlog.Info("已发送消息：" + string(jsonMessage))
         }
     }
 }
@@ -568,31 +801,7 @@ func main() {
 
 ---
 
-## 十、KafkaServer vs Channel Server 对比
-
-### Server结构体对比
-
-| 项目 | Channel Server | Kafka Server |
-|------|---------------|-------------|
-| 文件 | `internal/service/chat/server.go` | `internal/service/chat/kafka_server.go` |
-| Transmit通道 | `Transmit chan []byte` | ❌ 无（Kafka代替） |
-| Login通道 | `Login chan *Client` | `Login chan *Client` |
-| Logout通道 | `Logout chan *Client` | `Logout chan *Client` |
-| 消息处理 | `case data := <-s.Transmit` | `kafka.KafkaService.ChatReader.ReadMessage()` |
-
-### 核心差异
-
-```
-Channel Server:
-Client.Read() → Server.Transmit → Server处理 → Server转发
-
-Kafka Server:
-Client.Read() → Kafka Topic → KafkaServer.ReadMessage() → KafkaServer处理 → 转发
-```
-
----
-
-## 十一、创建Kafka Topic
+## 十、创建Kafka Topic
 
 ### 安装Kafka
 
@@ -632,10 +841,61 @@ bin/windows/kafka-topics.bat --create \
 
 ---
 
-## 十二、安装依赖
+## 十一、安装依赖
 
 ```bash
+# Kafka Go客户端
 go get github.com/segmentio/kafka-go
+
+# WebSocket库
+go get github.com/gorilla/websocket
+```
+
+---
+
+## 十二、常量与枚举定义
+
+### constants.go - 常量定义
+
+**文件位置:** `pkg/constants/constants.go`
+
+```go
+package constants
+
+const (
+    CHANNEL_SIZE  = 100            // 通道大小
+    SYSTEM_ERROR  = "系统错误，请联系工作人员" // 系统错误
+    FILE_MAX_SIZE = 50000          // 文件最大大小
+    REDIS_TIMEOUT = 1              // redis timeout（分钟）
+)
+```
+
+### message_type_enum.go - 消息类型枚举
+
+**文件位置:** `pkg/enum/message/message_type_enum/message_type_enum.go`
+
+```go
+package message_type_enum
+
+const (
+    Text = iota    // 0 - 文本消息
+    Voice          // 1 - 语音消息
+    File           // 2 - 文件消息
+    AudioOrVideo   // 3 - 音视频通话
+)
+```
+
+### message_status_enum.go - 消息状态枚举
+
+**文件位置:** `pkg/enum/message/message_status_enum/message_status_enum.go`
+
+```go
+package message_status_enum
+
+const (
+    Unsent = iota  // 0 - 未发送
+    Sent           // 1 - 已发送
+)
 ```
 
 ---

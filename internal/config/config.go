@@ -2,6 +2,8 @@ package config
 
 import (
 	"log"
+	"time"
+
 	"github.com/BurntSushi/toml"
 )
 
@@ -55,6 +57,17 @@ type EmailConfig struct {
     FromName     string `toml:"fromName"`     // 发件人名称
 }
 
+// KafkaConfig - Kafka配置
+type KafkaConfig struct {
+    MessageMode string        `toml:"messageMode"` // channel 或 kafka
+    HostPort    string        `toml:"hostPort"`    // Kafka地址
+    LoginTopic  string        `toml:"loginTopic"`  // 登录Topic
+    ChatTopic   string        `toml:"chatTopic"`   // 聊天消息Topic
+    LogoutTopic string        `toml:"logoutTopic"` // 登出Topic
+    Partition   int           `toml:"partition"`   // 分区号
+    Timeout     time.Duration `toml:"timeout"`     // 超时秒数
+}
+
 // 总配置
 type Config struct {
 	MainConfig    	`toml:"mainConfig"`
@@ -63,6 +76,7 @@ type Config struct {
 	StaticSrcConfig `toml:"staticSrcConfig"`
 	RedisConfig     `toml:"redisConfig"`
 	EmailConfig    `toml:"emailConfig"`
+	KafkaConfig     `toml:"kafkaConfig"` 
 }
 
 
