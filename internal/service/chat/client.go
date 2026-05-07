@@ -7,12 +7,16 @@ import (
 	"strconv"
 
 	"kama-chat-server/internal/config"
+	"kama-chat-server/internal/dao"
 	"kama-chat-server/internal/dto/request"
+	"kama-chat-server/internal/model"
 	myKafka "kama-chat-server/internal/service/kafka"
 	"kama-chat-server/pkg/constants"
+	"kama-chat-server/pkg/enum/message/message_status_enum"
 	"kama-chat-server/pkg/zlog"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/segmentio/kafka-go"
 )
@@ -84,4 +88,80 @@ func (c *Client) Read() {
 			zlog.Info("已发送信息: " + string(jsonMessage))
 		}
 	}
+}
+
+
+func (c *Client) Write() {
+	zlog.Info("ws write goroutine start")
+	for messageBack := range c.SendBack {
+		err := c.Conn.WriteMessage(websocket.TextMessage, messageBack.Message)
+		if err != nil {
+			zlog.Error(err.Error())
+			return
+		}
+
+		if res := dao.GormDB.Model(&model.Message{}).Where("uuid=?", messageBack.Uuid).Update("status", message_status_enum.Sent); res.Error != nil {
+			zlog.Error(res.Error.Error())
+		}
+	}
+}
+
+
+// ============================================================
+// NewClientInit - 创建并初始化Client
+// ============================================================
+
+func NewClientInit(c *gin.Context, clientId string) {
+	kafkaConfig := config.GetConfig().KafkaConfig
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		zlog.Error(err.Error())
+	}
+
+	client := &Client{
+		Conn:	conn,
+		Uuid:   clientId,
+		SendTo: make(chan []byte, constants.CHANNEL_SIZE),
+		SendBack: make(chan *MessageBack, constants.CHANNEL_SIZE),
+	}
+
+	if kafkaConfig.MessageMode == "channel" {
+		ChatServer.SendClientToLogin(client)
+	} else {
+		KafkaChatServer.SendClientToLogin(client)
+	}
+
+	go client.Read()
+	go client.Write()
+	zlog.Info("ws连接成功")
+}
+
+
+// ============================================================
+// ClientLogout - WebSocket客户端登出
+// ============================================================
+// ★当前端用户退出登录时调用
+func ClientLogout(clientId string) (string, int) {
+	kafkaConfig := config.GetConfig().KafkaConfig
+
+	client := ChatServer.Clients[clientId]
+
+	if client != nil {
+		if kafkaConfig.MessageMode == "channel" {
+			ChatServer.SendClientToLogout(client)
+		} else {
+			KafkaChatServer.SendClientToLogout(client)
+		}
+	}
+
+	if err := client.Conn.Close(); err != nil {
+		zlog.Error(err.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+
+	close(client.SendTo)
+	close(client.SendBack)
+
+	return "退出成功", 0
 }
