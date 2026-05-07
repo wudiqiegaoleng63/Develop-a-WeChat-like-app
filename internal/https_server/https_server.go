@@ -81,7 +81,8 @@ func registerRoutes() {
 	GE.POST("/message/getGroupMessageList", v1.GetGroupMessageList) // 获取群聊消息列表
 	GE.POST("/message/uploadAvatar", v1.UploadAvatar)              // 上传头像
 	GE.POST("/message/uploadFile", v1.UploadFile)                  // 上传文件
-
+	GE.GET("/user/wsLogin", v1.WsLogin)      // WebSocket登录（GET请求）
+    GE.POST("/user/wsLogout", v1.WsLogout)   // WebSocket登出
 }
 
 // RunServer 启动HTTP服务器

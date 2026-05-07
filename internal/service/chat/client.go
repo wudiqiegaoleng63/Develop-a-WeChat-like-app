@@ -22,16 +22,18 @@ import (
 )
 
 
-type Client struct {
-	Conn 	*websocket.Conn
-	Uuid	string
-	SendTo	chan	[]byte
-	SendBack chan	*MessageBack
+// MessageBack 返回给前端的消息结构
+type MessageBack struct {
+	Message []byte
+	Uuid    string
 }
 
-type MessageBack struct {
-	Message 	[]byte
-	Uuid		string
+// Client WebSocket客户端结构体
+type Client struct {
+	Conn     *websocket.Conn // WebSocket连接
+	Uuid     string          // 用户唯一标识
+	SendTo   chan []byte     // 给Server端的Channel（Channel模式缓冲）
+	SendBack chan *MessageBack // 发送给前端的Channel
 }
 
 var messageMode = config.GetConfig().KafkaConfig.MessageMode
@@ -153,15 +155,15 @@ func ClientLogout(clientId string) (string, int) {
 		} else {
 			KafkaChatServer.SendClientToLogout(client)
 		}
-	}
 
-	if err := client.Conn.Close(); err != nil {
-		zlog.Error(err.Error())
-		return constants.SYSTEM_ERROR, -1
-	}
+		if err := client.Conn.Close(); err != nil {
+			zlog.Error(err.Error())
+			return constants.SYSTEM_ERROR, -1
+		}
 
-	close(client.SendTo)
-	close(client.SendBack)
+		close(client.SendTo)
+		close(client.SendBack)
+	}
 
 	return "退出成功", 0
 }

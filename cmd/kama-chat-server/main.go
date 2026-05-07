@@ -2,25 +2,70 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
-	// ★用 _ 导入，只触发init()，不使用包内的函数
-	_ "kama-chat-server/internal/config"         // 配置加载
-	_ "kama-chat-server/internal/dao"            // 数据库连接
-	_ "kama-chat-server/internal/service/redis"  // Redis服务
-	_ "kama-chat-server/internal/service/email"  // 邮箱验证码服务
-	"kama-chat-server/internal/https_server"     // HTTP服务器（需要调用RunServer）
+	"kama-chat-server/internal/config"
+	_ "kama-chat-server/internal/dao"           // 数据库连接
+	"kama-chat-server/internal/https_server"    // HTTP服务器（需要调用RunServer）
+	"kama-chat-server/internal/service/chat"
+	_ "kama-chat-server/internal/service/email" // 邮箱验证码服务
+	"kama-chat-server/internal/service/kafka"
+	myredis "kama-chat-server/internal/service/redis"
+	_ "kama-chat-server/internal/service/redis" // Redis服务
+	"kama-chat-server/pkg/zlog"
 )
 
 func main() {
-	// ★导入包后，各包的init()已自动执行：
-	// 1. config.init() → 加载配置
-	// 2. dao.init() → 连接数据库
-	// 3. redis.init() → 连接Redis
-	// 4. https_server.init() → 注册路由
+    conf := config.GetConfig()
+    host := conf.MainConfig.Host
+    port := conf.MainConfig.Port
+    kafkaConfig := conf.KafkaConfig
 
-	// 验证服务已初始化
-	fmt.Println("服务启动中...")
+    // 1. 如果使用Kafka模式，初始化Kafka连接
+    if kafkaConfig.MessageMode == "kafka" {
+        kafka.KafkaService.KafkaInit()
+    }
 
-	// ★启动HTTP服务器（阻塞运行）
-	https_server.RunServer()
+    // 2. 根据消息模式启动对应的Server
+    if kafkaConfig.MessageMode == "channel" {
+        go chat.ChatServer.Start()
+    } else {
+        go chat.KafkaChatServer.Start()
+    }
+
+    // 3. 启动HTTP服务器
+    go func() {
+        if err := https_server.GE.Run(fmt.Sprintf("%s:%d", host, port)); err != nil {
+            zlog.Fatal("server running fault")
+            return
+        }
+    }()
+
+    // 4. 设置信号监听（优雅关闭）
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+    // 5. 等待信号
+    <-quit
+
+    // 6. 关闭Kafka连接
+    if kafkaConfig.MessageMode == "kafka" {
+        kafka.KafkaService.KafkaClose()
+    }
+
+    // 7. 关闭ChatServer
+    chat.ChatServer.Close()
+
+    zlog.Info("关闭服务器...")
+
+    // 8. 删除所有Redis键
+    if err := myredis.DeleteAllRedisKeys(); err != nil {
+        zlog.Error(err.Error())
+    } else {
+        zlog.Info("所有Redis键已删除")
+    }
+
+    zlog.Info("服务器已关闭")
 }

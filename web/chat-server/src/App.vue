@@ -55,7 +55,7 @@ export default {
           logout();
         }
         const wsUrl =
-          store.state.wsUrl + "/wss?client_id=" + store.state.userInfo.uuid;
+          store.state.wsUrl + "/user/wsLogin?client_id=" + store.state.userInfo.uuid;
           console.log(wsUrl);
         store.state.socket = new WebSocket(wsUrl);
         store.state.socket.onopen = () => {

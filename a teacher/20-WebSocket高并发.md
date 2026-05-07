@@ -855,21 +855,90 @@ func registerRoutes() {
 
 **文件位置:** `cmd/kama-chat-server/main.go`
 
+### 完整代码
+
 ```go
+package main
+
+import (
+	"fmt"
+	"kama_chat_server/internal/config"
+	"kama_chat_server/internal/https_server"
+	"kama_chat_server/internal/service/chat"
+	"kama_chat_server/internal/service/kafka"
+	myredis "kama_chat_server/internal/service/redis"
+	"kama_chat_server/pkg/zlog"
+	"os"
+	"os/signal"
+	"syscall"
+)
+
 func main() {
 	conf := config.GetConfig()
+	host := conf.MainConfig.Host
+	port := conf.MainConfig.Port
 	kafkaConfig := conf.KafkaConfig
 
-	// 根据消息模式启动对应的Server
+	// 1. 如果使用Kafka模式，初始化Kafka连接
+	if kafkaConfig.MessageMode == "kafka" {
+		kafka.KafkaService.KafkaInit()
+	}
+
+	// 2. 根据消息模式启动对应的Server
 	if kafkaConfig.MessageMode == "channel" {
 		go chat.ChatServer.Start()
 	} else {
 		go chat.KafkaChatServer.Start()
 	}
 
-	// ... 其他启动逻辑
+	// 3. 启动HTTP服务器
+	go func() {
+		if err := https_server.GE.Run(fmt.Sprintf("%s:%d", host, port)); err != nil {
+			zlog.Fatal("server running fault")
+			return
+		}
+	}()
+
+	// 4. 设置信号监听（优雅关闭）
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// 5. 等待信号
+	<-quit
+
+	// 6. 关闭Kafka连接
+	if kafkaConfig.MessageMode == "kafka" {
+		kafka.KafkaService.KafkaClose()
+	}
+
+	// 7. 关闭ChatServer
+	chat.ChatServer.Close()
+
+	zlog.Info("关闭服务器...")
+
+	// 8. 删除所有Redis键
+	if err := myredis.DeleteAllRedisKeys(); err != nil {
+		zlog.Error(err.Error())
+	} else {
+		zlog.Info("所有Redis键已删除")
+	}
+
+	zlog.Info("服务器已关闭")
 }
 ```
+
+### 关键步骤说明
+
+| 步骤 | 说明 |
+|------|------|
+| 1. Kafka初始化 | 仅在Kafka模式下执行，创建Topic、连接生产者/消费者 |
+| 2. 启动Server | 根据配置选择Channel模式或Kafka模式的Server |
+| 3. HTTP服务器 | 启动Gin服务器，监听端口 |
+| 4. 信号监听 | 监听 `Ctrl+C` (SIGINT) 和终止信号 (SIGTERM) |
+| 5. 等待信号 | 阻塞等待，直到收到关闭信号 |
+| 6. 关闭Kafka | 关闭生产者和消费者连接 |
+| 7. 关闭ChatServer | 关闭所有Channel（Login/Logout/Transmit） |
+| 8. 清理Redis | 删除所有缓存键，避免数据残留 |
 
 ---
 
