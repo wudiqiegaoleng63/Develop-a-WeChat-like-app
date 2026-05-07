@@ -8,7 +8,7 @@ Kafka是消息队列扩展，需要先完成基础开发顺序：
 Model → DAO → Service → Controller → 路由注册 → WebSocket → Kafka
 
 ①-⑤: 基础架构（01-09文档）已完成
-⑥ WebSocket: 实时通信基础（19文档）
+⑥ WebSocket: 实时通信基础（20文档）
 ⑦ Kafka: ★当前文档★ 高并发消息缓冲
 ```
 
@@ -898,9 +898,130 @@ const (
 )
 ```
 
+### normalizePath - 头像路径标准化函数
+
+**文件位置:** `internal/service/chat/server.go`
+
+```go
+import (
+    "log"
+    "strings"
+    "kama_chat_server/pkg/zlog"
+)
+
+// normalizePath 标准化头像路径
+// 将 https://127.0.0.1:8000/static/xxx 转为 /static/xxx
+// 防止IP前缀引入导致前端无法正确加载静态资源
+func normalizePath(path string) string {
+    // 特殊处理：Element UI 默认头像
+    if path == "https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" {
+        return path
+    }
+    
+    // 查找 "/static/" 的位置
+    staticIndex := strings.Index(path, "/static/")
+    if staticIndex < 0 {
+        log.Println(path)
+        zlog.Error("路径不合法")
+    }
+    
+    // 返回从 "/static/" 开始的部分
+    return path[staticIndex:]
+}
+```
+
 ---
 
-## 十三、创建文件步骤
+## 十三、Respond结构体定义
+
+### GetMessageListRespond - 私聊消息响应
+
+**文件位置:** `internal/dto/respond/get_message_list_respond.go`
+
+```go
+package respond
+
+// GetMessageListRespond 私聊消息响应结构体
+type GetMessageListRespond struct {
+    SendId     string `json:"send_id"`     // 发送者UUID
+    SendName   string `json:"send_name"`   // 发送者昵称
+    SendAvatar string `json:"send_avatar"` // 发送者头像
+    ReceiveId  string `json:"receive_id"`  // 接收者UUID
+    Type       int8   `json:"type"`        // 消息类型
+    Content    string `json:"content"`     // 文本内容
+    Url        string `json:"url"`         // 文件URL
+    FileType   string `json:"file_type"`   // 文件类型
+    FileName   string `json:"file_name"`   // 文件名
+    FileSize   string `json:"file_size"`   // 文件大小
+    CreatedAt  string `json:"created_at"`  // 创建时间
+}
+```
+
+### GetGroupMessageListRespond - 群聊消息响应
+
+**文件位置:** `internal/dto/respond/get_group_messagelist_respond.go`
+
+```go
+package respond
+
+// GetGroupMessageListRespond 群聊消息响应结构体
+type GetGroupMessageListRespond struct {
+    SendId     string `json:"send_id"`     // 发送者UUID
+    SendName   string `json:"send_name"`   // 发送者昵称
+    SendAvatar string `json:"send_avatar"` // 发送者头像
+    ReceiveId  string `json:"receive_id"`  // 群组UUID
+    Type       int8   `json:"type"`        // 消息类型
+    Content    string `json:"content"`     // 文本内容
+    Url        string `json:"url"`         // 文件URL
+    FileType   string `json:"file_type"`   // 文件类型
+    FileName   string `json:"file_name"`   // 文件名
+    FileSize   string `json:"file_size"`   // 文件大小
+    CreatedAt  string `json:"created_at"`  // 创建时间
+}
+```
+
+### AVMessageRespond - 音视频消息响应
+
+**文件位置:** `internal/dto/respond/av_message_respond.go`
+
+```go
+package respond
+
+// AVMessageRespond 音视频通话消息响应结构体
+type AVMessageRespond struct {
+    SendId     string `json:"send_id"`     // 发送者UUID
+    SendName   string `json:"send_name"`   // 发送者昵称
+    SendAvatar string `json:"send_avatar"` // 发送者头像
+    ReceiveId  string `json:"receive_id"`  // 接收者UUID
+    Type       int8   `json:"type"`        // 消息类型（3=音视频通话）
+    Content    string `json:"content"`     // 文本内容
+    Url        string `json:"url"`         // 文件URL
+    FileType   string `json:"file_type"`   // 文件类型
+    FileName   string `json:"file_name"`   // 文件名
+    FileSize   string `json:"file_size"`   // 文件大小
+    CreatedAt  string `json:"created_at"`  // 创建时间
+    AVdata     string `json:"av_data"`     // 音视频通话数据（JSON字符串）
+}
+```
+
+### AVData - 音视频通话数据请求
+
+**文件位置:** `internal/dto/request/av_data_request.go`
+
+```go
+package request
+
+// AVData 音视频通话数据结构体
+// 用于解析 ChatMessageRequest.AVdata 字段
+type AVData struct {
+    MessageId string `json:"messageId"` // 消息ID（"PROXY" 表示代理消息）
+    Type      string `json:"type"`      // 通话类型：start_call, receive_call, reject_call
+}
+```
+
+---
+
+## 十四、创建文件步骤
 
 ### 步骤1: 安装并启动Kafka
 
@@ -928,7 +1049,7 @@ const (
 
 ---
 
-## 十四、下一步
+## 十五、下一步
 
 Kafka消息队列理解后，继续学习：
 - **20-WebSocket高并发.md** - WebSocket Server和Client实现
