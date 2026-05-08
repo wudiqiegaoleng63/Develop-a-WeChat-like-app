@@ -83,6 +83,7 @@ func registerRoutes() {
 	GE.POST("/message/uploadFile", v1.UploadFile)                  // 上传文件
 	GE.GET("/user/wsLogin", v1.WsLogin)      // WebSocket登录（GET请求）
     GE.POST("/user/wsLogout", v1.WsLogout)   // WebSocket登出
+	GE.POST("/chatroom/getCurContactListInChatRoom", v1.GetCurContactListInChatRoom)
 }
 
 // RunServer 启动HTTP服务器
