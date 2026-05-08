@@ -1,7 +1,8 @@
 a fangweixin（go）/
-web/chat-server/node_modules/
-
-
+web
+*.exe
 configs/config_local.toml
 
 CLAUDE.md
+
+react_web/node_modules/

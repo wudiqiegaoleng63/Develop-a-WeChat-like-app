@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "微信风格即时通讯聊天应用",
+  "entry": "wechat-chat-app.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-05-08T04:35:25.134Z",
+  "updatedAt": "2026-05-08T04:35:25.149Z",
+  "sourceSkillId": "blog-post",
+  "designSystemId": "default",
+  "metadata": {
+    "identifier": "wechat-chat-app",
+    "artifactType": "text/html",
+    "inferred": false
+  }
+}

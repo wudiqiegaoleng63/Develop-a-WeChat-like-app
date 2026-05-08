@@ -1,0 +1,2485 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>即时通讯 - 微信风格聊天应用</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+:root {
+  --wechat-green: #07C160;
+  --wechat-green-light: #95EC69;
+  --wechat-green-dark: #06ad56;
+  --bg-gray: #F5F5F5;
+  --sidebar-dark: #2E2E2E;
+  --sidebar-hover: rgba(255,255,255,0.08);
+  --white: #FFFFFF;
+  --offline-gray: #CCCCCC;
+  --text-primary: #111111;
+  --text-secondary: #6B6B6B;
+  --border-color: #E5E5E5;
+  --danger: #FF4D4F;
+  --admin-header-bg: rgb(252, 210, 210);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-gray);
+  color: var(--text-primary);
+  min-width: 800px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root { height: 100vh; }
+
+/* ====== 登录 / 注册页面 ====== */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #E8F5E9 0%, #F5F5F5 50%, #E3F2FD 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-page::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: rgba(7,193,96,0.05);
+  top: -200px; right: -100px;
+}
+
+.auth-page::after {
+  content: '';
+  position: absolute;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: rgba(7,193,96,0.03);
+  bottom: -100px; left: -50px;
+}
+
+.auth-card {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  padding: 48px;
+  width: 440px;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-logo .icon {
+  width: 64px; height: 64px;
+  background: var(--wechat-green);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 32px; color: white;
+}
+
+.auth-logo h1 { font-size: 24px; font-weight: 600; }
+.auth-logo p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+
+/* Tabs */
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  background: none; border: none;
+}
+
+.auth-tab.active {
+  color: var(--wechat-green);
+  border-bottom-color: var(--wechat-green);
+  font-weight: 500;
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  border-color: var(--wechat-green);
+}
+
+.form-input.error {
+  border-color: var(--danger);
+}
+
+.form-error {
+  font-size: 12px;
+  color: var(--danger);
+  margin-top: 4px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .form-input { flex: 1; }
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px; height: 16px;
+  accent-color: var(--wechat-green);
+}
+
+.link {
+  color: var(--wechat-green);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.link:hover { text-decoration: underline; }
+
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: var(--wechat-green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+}
+
+.btn-primary:hover { background: var(--wechat-green-dark); }
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: var(--white);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.btn-secondary:hover { border-color: var(--wechat-green); color: var(--wechat-green); }
+
+.auth-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* Avatar upload */
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.avatar-preview {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--bg-gray);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; color: var(--text-secondary);
+  cursor: pointer;
+  border: 2px dashed var(--border-color);
+  transition: border-color 0.2s;
+}
+
+.avatar-preview:hover { border-color: var(--wechat-green); }
+.avatar-preview img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+.avatar-upload span { font-size: 12px; color: var(--text-secondary); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 24px; left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 24px;
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  font-size: 14px;
+  z-index: 9999;
+  display: flex; align-items: center; gap: 8px;
+  animation: toastIn 0.3s ease;
+}
+
+.toast.success { border-left: 3px solid var(--wechat-green); }
+.toast.success::before { content: '✓'; color: var(--wechat-green); font-weight: 600; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ====== 主聊天界面 ====== */
+.chat-page {
+  height: 100vh;
+  display: flex;
+  background: var(--white);
+}
+
+/* 左侧栏 */
+.sidebar-left {
+  width: 250px;
+  background: var(--sidebar-dark);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar-user {
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.user-avatar-wrapper {
+  position: relative;
+  width: 64px; height: 64px;
+  margin: 0 auto 12px;
+}
+
+.user-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.status-dot {
+  position: absolute;
+  bottom: 2px; right: 2px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--sidebar-dark);
+}
+
+.status-dot.online { background: var(--wechat-green); }
+.status-dot.offline { background: var(--offline-gray); }
+
+.user-name {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.user-status-text {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+}
+
+.sidebar-actions {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+
+.sidebar-btn:hover { background: var(--sidebar-hover); }
+.sidebar-btn .btn-icon { font-size: 18px; width: 20px; text-align: center; }
+
+.sidebar-settings {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* 折叠按钮 */
+.collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.collapse-btn:hover {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.05);
+}
+
+/* 折叠态 */
+.sidebar-left.collapsed {
+  width: 64px;
+}
+
+.sidebar-left.collapsed .sidebar-user {
+  padding: 16px 8px;
+}
+
+.sidebar-left.collapsed .user-name,
+.sidebar-left.collapsed .user-status-text {
+  display: none;
+}
+
+.sidebar-left.collapsed .user-avatar-wrapper {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 0;
+}
+
+.sidebar-left.collapsed .user-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.sidebar-left.collapsed .status-dot {
+  width: 10px;
+  height: 10px;
+  bottom: 0;
+  right: 0;
+}
+
+.sidebar-left.collapsed .sidebar-actions {
+  padding: 8px 6px;
+  align-items: center;
+}
+
+.sidebar-left.collapsed .sidebar-btn {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+.sidebar-left.collapsed .sidebar-btn .btn-text {
+  display: none;
+}
+
+.sidebar-left.collapsed .sidebar-settings {
+  padding: 12px 6px;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-left.collapsed .sidebar-settings .sidebar-btn {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+.sidebar-left.collapsed .sidebar-settings .sidebar-btn .btn-text {
+  display: none;
+}
+
+/* 中间栏 */
+.sidebar-middle {
+  width: 300px;
+  background: var(--bg-gray);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.search-box {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-gray);
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.search-input:focus { border-color: var(--wechat-green); }
+
+.session-tabs {
+  display: flex;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--white);
+}
+
+.session-tab {
+  flex: 1;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  font-family: inherit;
+}
+
+.session-tab.active {
+  color: var(--wechat-green);
+  border-bottom-color: var(--wechat-green);
+  font-weight: 500;
+}
+
+.session-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--white);
+}
+
+.session-item:hover { background: #F9F9F9; }
+.session-item.active { background: var(--bg-gray); }
+
+.session-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.session-info { flex: 1; min-width: 0; }
+
+.session-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-indicator {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-indicator.online { background: var(--wechat-green); }
+.status-indicator.offline { background: var(--offline-gray); }
+
+.session-preview {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.session-time { font-size: 11px; color: var(--text-secondary); }
+
+.unread-badge {
+  background: var(--danger);
+  color: white;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 16px;
+}
+
+/* 右侧聊天区域 */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-gray);
+}
+
+.chat-header {
+  padding: 16px 20px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-header-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-header-info h3 {
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-header-info .status-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.chat-header-actions { display: flex; gap: 4px; }
+
+.chat-header-btn {
+  width: 36px; height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  color: var(--text-secondary);
+  transition: background 0.2s;
+}
+
+.chat-header-btn:hover { background: var(--bg-gray); }
+
+/* 消息列表 */
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message-item {
+  display: flex;
+  gap: 8px;
+  max-width: 75%;
+}
+
+.message-item.sent {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message-item.sent .message-content { align-items: flex-end; }
+
+.message-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+.message-item.received .message-bubble {
+  background: var(--white);
+  border-top-left-radius: 4px;
+}
+
+.message-item.sent .message-bubble {
+  background: var(--wechat-green-light);
+  border-top-right-radius: 4px;
+}
+
+.message-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 0 4px;
+}
+
+.message-status {
+  font-size: 11px;
+  color: var(--wechat-green);
+  margin-left: 4px;
+}
+
+/* 文件消息 */
+.file-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--white);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  min-width: 200px;
+}
+
+.file-icon { font-size: 24px; }
+.file-info { flex: 1; }
+.file-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.file-size { font-size: 12px; color: var(--text-secondary); }
+.file-download { color: var(--wechat-green); cursor: pointer; font-size: 16px; }
+
+/* 输入区域 */
+.chat-input-area {
+  padding: 12px 20px;
+  background: var(--white);
+  border-top: 1px solid var(--border-color);
+}
+
+.input-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.toolbar-btn {
+  width: 32px; height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover { background: var(--bg-gray); color: var(--wechat-green); }
+
+.input-wrapper { display: flex; gap: 12px; align-items: flex-end; }
+
+.message-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  min-height: 40px;
+  max-height: 120px;
+}
+
+.message-input:focus { border-color: var(--wechat-green); }
+
+.send-btn {
+  padding: 10px 24px;
+  background: var(--wechat-green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.send-btn:hover { opacity: 0.9; }
+.send-btn:disabled { background: var(--offline-gray); cursor: not-allowed; }
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
+
+/* ====== 管理员页面 ====== */
+.admin-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-gray);
+}
+
+.admin-header {
+  height: 70px;
+  background: var(--admin-header-bg);
+  border-radius: 0 0 30px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  flex-shrink: 0;
+}
+
+.admin-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-header-icon {
+  width: 40px; height: 40px;
+  background: var(--white);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+
+.admin-header-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.btn-back-chat {
+  padding: 8px 20px;
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.btn-back-chat:hover {
+  border-color: var(--wechat-green);
+  color: var(--wechat-green);
+}
+
+.admin-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  margin: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.admin-sidebar {
+  width: 220px;
+  border-right: 1px solid var(--border-color);
+  padding: 16px 0;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.admin-menu-group {
+  margin-bottom: 8px;
+}
+
+.admin-menu-label {
+  padding: 8px 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.admin-menu-item:hover {
+  background: var(--bg-gray);
+}
+
+.admin-menu-item.active {
+  background: rgba(7, 193, 96, 0.08);
+  color: var(--wechat-green);
+  font-weight: 500;
+  border-right: 3px solid var(--wechat-green);
+}
+
+.admin-menu-item .menu-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.admin-content h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 表格 */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table thead {
+  background: var(--bg-gray);
+}
+
+.admin-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+}
+
+.admin-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(7, 193, 96, 0.02);
+}
+
+.admin-table input[type="checkbox"] {
+  width: 16px; height: 16px;
+  accent-color: var(--wechat-green);
+  cursor: pointer;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tag-success {
+  background: rgba(7, 193, 96, 0.1);
+  color: var(--wechat-green);
+}
+
+.tag-danger {
+  background: rgba(255, 77, 79, 0.1);
+  color: var(--danger);
+}
+
+.tag-default {
+  background: var(--bg-gray);
+  color: var(--text-secondary);
+}
+
+.admin-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn-action {
+  padding: 8px 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--white);
+  transition: all 0.2s;
+}
+
+.btn-action:hover {
+  border-color: var(--wechat-green);
+  color: var(--wechat-green);
+}
+
+.btn-action.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn-action.danger:hover {
+  background: var(--danger);
+  color: var(--white);
+}
+
+.btn-action.primary {
+  background: var(--wechat-green);
+  color: var(--white);
+  border-color: var(--wechat-green);
+}
+
+.btn-action.primary:hover {
+  background: var(--wechat-green-dark);
+}
+
+/* ====== 音视频通话弹窗 ====== */
+.av-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.av-modal {
+  background: var(--white);
+  border-radius: 16px;
+  width: 720px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: slideUp 0.3s ease;
+}
+
+.av-modal-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.av-modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.av-close-btn {
+  width: 36px; height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  color: var(--text-secondary);
+  transition: background 0.2s;
+}
+
+.av-close-btn:hover { background: var(--bg-gray); }
+
+.av-modal-body {
+  padding: 24px;
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.av-video-box {
+  width: 320px;
+  height: 280px;
+  background: #1a1a1a;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.av-video-box .video-placeholder {
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  text-align: center;
+}
+
+.av-video-box .video-avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 12px;
+  border: 3px solid rgba(255,255,255,0.2);
+}
+
+.av-video-box .video-name {
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.av-video-label {
+  position: absolute;
+  bottom: 12px; left: 12px;
+  background: rgba(0,0,0,0.5);
+  color: var(--white);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.av-status {
+  text-align: center;
+  padding: 12px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.av-status .status-dot-inline {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.av-status .status-dot-inline.calling { background: #EAB308; animation: pulse 1.5s infinite; }
+.av-status .status-dot-inline.connected { background: var(--wechat-green); }
+.av-status .status-dot-inline.idle { background: var(--offline-gray); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.av-modal-footer {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-gray);
+}
+
+.av-btn {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 20px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.av-btn .av-btn-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.av-btn-start {
+  background: var(--wechat-green);
+  color: var(--white);
+}
+
+.av-btn-start:hover { background: var(--wechat-green-dark); }
+
+.av-btn-answer {
+  background: var(--wechat-green);
+  color: var(--white);
+}
+
+.av-btn-answer:hover { background: var(--wechat-green-dark); }
+
+.av-btn-reject {
+  background: #FF7875;
+  color: var(--white);
+}
+
+.av-btn-reject:hover { background: var(--danger); }
+
+.av-btn-hangup {
+  background: var(--danger);
+  color: var(--white);
+}
+
+.av-btn-hangup:hover { background: #d42626; }
+
+.av-btn-exit {
+  background: var(--bg-gray);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.av-btn-exit:hover { border-color: var(--text-secondary); }
+
+/* ====== 联系人/群组信息弹窗 ====== */
+.info-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.info-modal {
+  background: var(--white);
+  border-radius: 16px;
+  width: 440px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  animation: slideUp 0.3s ease;
+}
+
+.info-modal-header {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.info-modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.info-close-btn {
+  width: 32px; height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  color: var(--text-secondary);
+  transition: background 0.2s;
+}
+
+.info-close-btn:hover { background: var(--bg-gray); }
+
+.info-modal-body {
+  padding: 24px;
+}
+
+.info-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.info-avatar {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border-color);
+  margin-bottom: 12px;
+}
+
+.info-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.info-id {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.info-table tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.info-table tr:last-child { border-bottom: none; }
+
+.info-table td {
+  padding: 12px 0;
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.info-table .info-label {
+  width: 100px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.info-table .info-value {
+  color: var(--text-primary);
+}
+
+.info-textarea {
+  width: 100%;
+  min-height: 70px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg-gray);
+  color: var(--text-primary);
+  resize: none;
+}
+
+/* ====== 下拉菜单 ====== */
+.dropdown-menu-wrapper {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 140px;
+  z-index: 100;
+  padding: 4px;
+  animation: fadeIn 0.15s ease;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-gray);
+}
+
+.dropdown-item .item-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+/* ====== 确认对话框 ====== */
+.confirm-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  animation: fadeIn 0.15s ease;
+}
+
+.confirm-dialog {
+  background: var(--white);
+  border-radius: 12px;
+  padding: 24px;
+  width: 360px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  animation: slideUp 0.2s ease;
+}
+
+.confirm-dialog h4 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.confirm-dialog p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+/* ============ 假数据 ============ */
+const currentUser = {
+  uuid: "U20260428001",
+  name: "张三",
+  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1",
+  status: 0
+};
+
+const contacts = [
+  { uuid: "U20260428002", name: "李四", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", status: 0, lastMessage: "好的，今晚见！", time: "19:30", unread: 2 },
+  { uuid: "U20260428003", name: "王五", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", status: 1, lastMessage: "文件已发送", time: "18:45", unread: 0 },
+  { uuid: "U20260428004", name: "赵六", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=4", status: 0, lastMessage: "明天开会记得带资料", time: "17:20", unread: 1 },
+  { uuid: "G20260428001", name: "项目组", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=group1", status: 0, lastMessage: "李四: 收到", time: "16:00", unread: 5, isGroup: true },
+  { uuid: "U20260428005", name: "孙七", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=5", status: 0, lastMessage: "周末一起打球", time: "昨天", unread: 0 },
+];
+
+const messagesData = {
+  "U20260428002": [
+    { uuid: "M001", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "在吗？", type: 1, createdAt: "19:25", status: 2 },
+    { uuid: "M002", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "在的，怎么了？", type: 1, createdAt: "19:26", status: 2 },
+    { uuid: "M003", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "今晚一起吃饭吗？", type: 1, createdAt: "19:27", status: 2 },
+    { uuid: "M004", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "好的，晚上6点老地方见！", type: 1, createdAt: "19:28", status: 2 },
+    { uuid: "M005", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "好的，今晚见！", type: 1, createdAt: "19:30", status: 1 },
+  ],
+  "U20260428003": [
+    { uuid: "M006", sendId: "U20260428003", sendName: "王五", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", content: "这是你要的文件", type: 3, createdAt: "18:40", status: 2, fileName: "项目方案.pdf", fileSize: "2.4MB" },
+    { uuid: "M007", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "收到，谢谢！", type: 1, createdAt: "18:42", status: 2 },
+    { uuid: "M008", sendId: "U20260428003", sendName: "王五", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", content: "文件已发送", type: 1, createdAt: "18:45", status: 2 },
+  ],
+  "U20260428004": [
+    { uuid: "M009", sendId: "U20260428004", sendName: "赵六", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=4", content: "明天开会记得带资料", type: 1, createdAt: "17:20", status: 2 },
+  ],
+  "G20260428001": [
+    { uuid: "M010", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "项目进度汇报一下", type: 1, createdAt: "15:50", status: 2 },
+    { uuid: "M011", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "我这边已经完成了前端页面", type: 1, createdAt: "15:55", status: 2 },
+    { uuid: "M012", sendId: "U20260428003", sendName: "王五", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", content: "后端接口也准备好了", type: 1, createdAt: "15:58", status: 2 },
+    { uuid: "M013", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "收到", type: 1, createdAt: "16:00", status: 2 },
+  ],
+  "U20260428005": [
+    { uuid: "M014", sendId: "U20260428005", sendName: "孙七", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=5", content: "周末一起打球", type: 1, createdAt: "昨天 14:20", status: 2 },
+    { uuid: "M015", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "好啊，几点？", type: 1, createdAt: "昨天 14:25", status: 2 },
+  ],
+};
+
+/* 管理员 - 用户数据 */
+const adminUsers = [
+  { uuid: "U20260428001", nickname: "张三", email: "zhangsan@example.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", status: 0, is_admin: 1 },
+  { uuid: "U20260428002", nickname: "李四", email: "lisi@example.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", status: 0, is_admin: 0 },
+  { uuid: "U20260428003", nickname: "王五", email: "wangwu@example.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", status: 0, is_admin: 0 },
+  { uuid: "U20260428004", nickname: "赵六", email: "zhaoliu@example.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=4", status: 1, is_admin: 0 },
+  { uuid: "U20260428005", nickname: "孙七", email: "sunqi@example.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=5", status: 0, is_admin: 0 },
+  { uuid: "U20260428006", nickname: "周八", email: "zhouba@example.com", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=6", status: 0, is_admin: 0 },
+];
+
+/* 管理员 - 群组数据 */
+const adminGroups = [
+  { uuid: "G20260428001", name: "项目组", owner_id: "U20260428001", member_count: 12, status: 0 },
+  { uuid: "G20260428002", name: "前端技术交流", owner_id: "U20260428002", member_count: 56, status: 0 },
+  { uuid: "G20260428003", name: "产品设计", owner_id: "U20260428003", member_count: 23, status: 0 },
+  { uuid: "G20260428004", name: "闲聊灌水", owner_id: "U20260428005", member_count: 128, status: 1 },
+];
+
+/* 联系人详情（模拟） */
+const contactDetails = {
+  "U20260428002": {
+    contact_id: "U20260428002", contact_name: "李四",
+    contact_avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2",
+    contact_phone: "13800138002", contact_email: "lisi@example.com",
+    contact_gender: 0, contact_signature: "今天天气不错，适合写代码。",
+    contact_birthday: "1995-06-15",
+  },
+  "U20260428003": {
+    contact_id: "U20260428003", contact_name: "王五",
+    contact_avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3",
+    contact_phone: "13800138003", contact_email: "wangwu@example.com",
+    contact_gender: 1, contact_signature: "热爱生活，热爱工作。",
+    contact_birthday: "1998-03-22",
+  },
+  "U20260428004": {
+    contact_id: "U20260428004", contact_name: "赵六",
+    contact_avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=4",
+    contact_phone: "13800138004", contact_email: "zhaoliu@example.com",
+    contact_gender: 0, contact_signature: "努力成为更好的自己。",
+    contact_birthday: "1997-11-08",
+  },
+  "U20260428005": {
+    contact_id: "U20260428005", contact_name: "孙七",
+    contact_avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=5",
+    contact_phone: "13800138005", contact_email: "sunqi@example.com",
+    contact_gender: 0, contact_signature: "周末约球！",
+    contact_birthday: "1996-08-30",
+  },
+  "G20260428001": {
+    contact_id: "G20260428001", contact_name: "项目组",
+    contact_avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=group1",
+    contact_owner_id: "U20260428001", contact_member_cnt: 12,
+    contact_add_mode: 0, contact_notice: "本群用于项目进度同步，请勿发送无关消息。每日下午5点前汇报当日进度。",
+  },
+};
+
+/* ============ Toast 组件 ============ */
+function Toast({ message, onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 2000);
+    return () => clearTimeout(t);
+  }, [onDone]);
+  return <div className="toast success">{message}</div>;
+}
+
+/* ============ 登录页面 ============ */
+function LoginPage({ onLogin, onSwitchToRegister }) {
+  const [tab, setTab] = useState('account');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [remember, setRemember] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (tab === 'account') {
+      if (!username.trim()) errs.username = '请输入用户名';
+      if (!password.trim()) errs.password = '请输入密码';
+    } else {
+      if (!email.trim()) errs.email = '请输入邮箱';
+      if (!code.trim()) errs.code = '请输入验证码';
+    }
+    setErrors(errs);
+    if (Object.keys(errs).length === 0) onLogin();
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <div className="icon">💬</div>
+          <h1>即时通讯</h1>
+          <p>随时随地，畅快沟通</p>
+        </div>
+
+        <div className="auth-tabs">
+          <button className={`auth-tab ${tab === 'account' ? 'active' : ''}`} onClick={() => { setTab('account'); setErrors({}); }}>账号密码登录</button>
+          <button className={`auth-tab ${tab === 'email' ? 'active' : ''}`} onClick={() => { setTab('email'); setErrors({}); }}>邮箱验证码登录</button>
+        </div>
+
+        <form onSubmit={handleLogin}>
+          {tab === 'account' ? (
+            <>
+              <div className="form-group">
+                <input className={`form-input ${errors.username ? 'error' : ''}`} placeholder="用户名" value={username} onChange={e => setUsername(e.target.value)} />
+                {errors.username && <div className="form-error">{errors.username}</div>}
+              </div>
+              <div className="form-group">
+                <input className={`form-input ${errors.password ? 'error' : ''}`} type="password" placeholder="密码" value={password} onChange={e => setPassword(e.target.value)} />
+                {errors.password && <div className="form-error">{errors.password}</div>}
+              </div>
+              <div className="form-options">
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} />
+                  记住密码
+                </label>
+                <span className="link">忘记密码？</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="form-group">
+                <input className={`form-input ${errors.email ? 'error' : ''}`} type="email" placeholder="邮箱地址" value={email} onChange={e => setEmail(e.target.value)} />
+                {errors.email && <div className="form-error">{errors.email}</div>}
+              </div>
+              <div className="form-group">
+                <div className="form-row">
+                  <input className={`form-input ${errors.code ? 'error' : ''}`} placeholder="验证码" value={code} onChange={e => setCode(e.target.value)} />
+                  <button type="button" className="btn-secondary">获取验证码</button>
+                </div>
+                {errors.code && <div className="form-error">{errors.code}</div>}
+              </div>
+            </>
+          )}
+          <button type="submit" className="btn-primary">登录</button>
+        </form>
+
+        <div className="auth-footer">
+          还没有账号？<span className="link" onClick={onSwitchToRegister}>立即注册</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ 注册页面 ============ */
+function RegisterPage({ onRegister, onSwitchToLogin }) {
+  const [form, setForm] = useState({ username: '', password: '', confirm: '', email: '', code: '' });
+  const [errors, setErrors] = useState({});
+
+  const update = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!form.username.trim()) errs.username = '请输入用户名';
+    if (!form.password.trim()) errs.password = '请输入密码';
+    else if (form.password.length < 6) errs.password = '密码至少6位';
+    if (form.password !== form.confirm) errs.confirm = '两次密码不一致';
+    if (!form.email.trim()) errs.email = '请输入邮箱';
+    if (!form.code.trim()) errs.code = '请输入验证码';
+    setErrors(errs);
+    if (Object.keys(errs).length === 0) onRegister();
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <div className="icon">💬</div>
+          <h1>创建账号</h1>
+          <p>加入我们，开始聊天</p>
+        </div>
+
+        <div className="avatar-upload">
+          <div className="avatar-preview">
+            <span>📷</span>
+          </div>
+          <span>点击上传头像（可选）</span>
+        </div>
+
+        <form onSubmit={handleRegister}>
+          <div className="form-group">
+            <input className={`form-input ${errors.username ? 'error' : ''}`} placeholder="用户名" value={form.username} onChange={e => update('username', e.target.value)} />
+            {errors.username && <div className="form-error">{errors.username}</div>}
+          </div>
+          <div className="form-group">
+            <input className={`form-input ${errors.password ? 'error' : ''}`} type="password" placeholder="密码" value={form.password} onChange={e => update('password', e.target.value)} />
+            {errors.password && <div className="form-error">{errors.password}</div>}
+          </div>
+          <div className="form-group">
+            <input className={`form-input ${errors.confirm ? 'error' : ''}`} type="password" placeholder="确认密码" value={form.confirm} onChange={e => update('confirm', e.target.value)} />
+            {errors.confirm && <div className="form-error">{errors.confirm}</div>}
+          </div>
+          <div className="form-group">
+            <input className={`form-input ${errors.email ? 'error' : ''}`} type="email" placeholder="邮箱地址" value={form.email} onChange={e => update('email', e.target.value)} />
+            {errors.email && <div className="form-error">{errors.email}</div>}
+          </div>
+          <div className="form-group">
+            <div className="form-row">
+              <input className={`form-input ${errors.code ? 'error' : ''}`} placeholder="验证码" value={form.code} onChange={e => update('code', e.target.value)} />
+              <button type="button" className="btn-secondary">获取验证码</button>
+            </div>
+            {errors.code && <div className="form-error">{errors.code}</div>}
+          </div>
+          <button type="submit" className="btn-primary">注册</button>
+        </form>
+
+        <div className="auth-footer">
+          已有账号？<span className="link" onClick={onSwitchToLogin}>返回登录</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ 消息气泡 ============ */
+function MessageBubble({ message, isSent }) {
+  const renderContent = () => {
+    switch (message.type) {
+      case 3:
+        return (
+          <div className="file-message">
+            <span className="file-icon">📄</span>
+            <div className="file-info">
+              <div className="file-name">{message.fileName || "文件"}</div>
+              <div className="file-size">{message.fileSize || "未知大小"}</div>
+            </div>
+            <span className="file-download">↓</span>
+          </div>
+        );
+      default:
+        return <div className="message-bubble">{message.content}</div>;
+    }
+  };
+
+  return (
+    <div className={`message-item ${isSent ? 'sent' : 'received'}`}>
+      <img src={message.sendAvatar} alt={message.sendName} className="message-avatar" />
+      <div className="message-content">
+        {renderContent()}
+        <div className="message-time">
+          {message.createdAt}
+          {isSent && message.status !== undefined && (
+            <span className="message-status">
+              {message.status === 1 ? '✓' : message.status === 2 ? '✓✓' : ''}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ 主聊天页面 ============ */
+function ChatPage({ onLogout, onGoAdmin }) {
+  const [activeSession, setActiveSession] = useState(contacts[0]);
+  const [messages, setMessages] = useState(messagesData);
+  const [inputValue, setInputValue] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [unreadMap, setUnreadMap] = useState(() => {
+    const map = {};
+    contacts.forEach(c => { if (c.unread > 0) map[c.uuid] = c.unread; });
+    return map;
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showAVModal, setShowAVModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const messageListRef = useRef(null);
+
+  useEffect(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    }
+  }, [messages, activeSession]);
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e) => {
+      if (!e.target.closest('.dropdown-menu-wrapper')) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [dropdownOpen]);
+
+  const handleSessionClick = (contact) => {
+    setActiveSession(contact);
+    setUnreadMap(prev => {
+      const next = { ...prev };
+      delete next[contact.uuid];
+      return next;
+    });
+  };
+
+  const handleSend = () => {
+    if (!inputValue.trim()) return;
+    const newMessage = {
+      uuid: 'M' + Date.now(),
+      sendId: currentUser.uuid,
+      sendName: currentUser.name,
+      sendAvatar: currentUser.avatar,
+      content: inputValue,
+      type: 1,
+      createdAt: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      status: 1,
+    };
+    setMessages(prev => ({
+      ...prev,
+      [activeSession.uuid]: [...(prev[activeSession.uuid] || []), newMessage],
+    }));
+    setInputValue('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const filteredContacts = contacts.filter(c => {
+    if (activeTab === 'contacts') return !c.isGroup;
+    if (activeTab === 'groups') return c.isGroup;
+    return true;
+  });
+
+  const currentMessages = messages[activeSession.uuid] || [];
+
+  return (
+    <div className="chat-page">
+      {/* 左侧栏 */}
+      <div className={`sidebar-left ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-user">
+          <div className="user-avatar-wrapper">
+            <img src={currentUser.avatar} alt={currentUser.name} className="user-avatar" />
+            <div className={`status-dot ${currentUser.status === 0 ? 'online' : 'offline'}`} />
+          </div>
+          <div className="user-name">{currentUser.name}</div>
+          <div className="user-status-text">{currentUser.status === 0 ? '在线' : '离线'}</div>
+        </div>
+        <div className="sidebar-actions">
+          <button className="sidebar-btn"><span className="btn-icon">🔍</span><span className="btn-text">搜索好友</span></button>
+          <button className="sidebar-btn"><span className="btn-icon">➕</span><span className="btn-text">添加好友</span></button>
+          <button className="sidebar-btn"><span className="btn-icon">👥</span><span className="btn-text">创建群组</span></button>
+        </div>
+        <div className="sidebar-settings">
+          <button className="sidebar-btn" onClick={onGoAdmin}><span className="btn-icon">🛡️</span><span className="btn-text">管理</span></button>
+          <button className="sidebar-btn" onClick={onLogout}><span className="btn-icon">🚪</span><span className="btn-text">退出</span></button>
+        </div>
+        <button
+          className="collapse-btn"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          title={sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
+        >
+          {sidebarCollapsed ? '›' : '‹'}
+        </button>
+      </div>
+
+      {/* 中间栏 */}
+      <div className="sidebar-middle">
+        <div className="search-box">
+          <input className="search-input" placeholder="搜索联系人/群组" />
+        </div>
+        <div className="session-tabs">
+          <button className={`session-tab ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>全部</button>
+          <button className={`session-tab ${activeTab === 'contacts' ? 'active' : ''}`} onClick={() => setActiveTab('contacts')}>联系人</button>
+          <button className={`session-tab ${activeTab === 'groups' ? 'active' : ''}`} onClick={() => setActiveTab('groups')}>群组</button>
+        </div>
+        <div className="session-list">
+          {filteredContacts.map(contact => (
+            <div
+              key={contact.uuid}
+              className={`session-item ${activeSession.uuid === contact.uuid ? 'active' : ''}`}
+              onClick={() => handleSessionClick(contact)}
+            >
+              <img src={contact.avatar} alt={contact.name} className="session-avatar" />
+              <div className="session-info">
+                <div className="session-name">
+                  {contact.name}
+                  {!contact.isGroup && <span className={`status-indicator ${contact.status === 0 ? 'online' : 'offline'}`} />}
+                </div>
+                <div className="session-preview">{contact.lastMessage}</div>
+              </div>
+              <div className="session-meta">
+                <span className="session-time">{contact.time}</span>
+                {unreadMap[contact.uuid] > 0 && (
+                  <span className="unread-badge">{unreadMap[contact.uuid] > 99 ? '99+' : unreadMap[contact.uuid]}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 右侧聊天区域 */}
+      <div className="chat-main">
+        <div className="chat-header">
+          <div className="chat-header-left">
+            <img src={activeSession.avatar} alt={activeSession.name} className="chat-header-avatar" />
+            <div className="chat-header-info">
+              <h3>
+                {activeSession.name}
+                {!activeSession.isGroup && <span className={`status-indicator ${activeSession.status === 0 ? 'online' : 'offline'}`} />}
+              </h3>
+              <div className="status-text">{activeSession.isGroup ? '群聊' : (activeSession.status === 0 ? '在线' : '离线')}</div>
+            </div>
+          </div>
+          <div className="chat-header-actions">
+            <button className="chat-header-btn" title="音视频通话" onClick={() => setShowAVModal(true)}>📞</button>
+            <div className="dropdown-menu-wrapper">
+              <button className="chat-header-btn" title="更多" onClick={() => setDropdownOpen(!dropdownOpen)}>⋯</button>
+              <DropdownMenu
+                isOpen={dropdownOpen}
+                onToggle={() => setDropdownOpen(!dropdownOpen)}
+                onClose={() => setDropdownOpen(false)}
+                items={[
+                  {
+                    icon: activeSession.isGroup ? '👥' : '👤',
+                    label: activeSession.isGroup ? '群聊信息' : '个人信息',
+                    onClick: () => setShowInfoModal(true),
+                  },
+                  { icon: '🛡️', label: '管理员', onClick: onGoAdmin },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="message-list" ref={messageListRef}>
+          {currentMessages.map(msg => (
+            <MessageBubble key={msg.uuid} message={msg} isSent={msg.sendId === currentUser.uuid} />
+          ))}
+        </div>
+
+        <div className="chat-input-area">
+          <div className="input-toolbar">
+            <button className="toolbar-btn" title="表情">😊</button>
+            <button className="toolbar-btn" title="文件">📎</button>
+            <button className="toolbar-btn" title="图片">🖼</button>
+            <button className="toolbar-btn" title="截图">✂</button>
+          </div>
+          <div className="input-wrapper">
+            <textarea
+              className="message-input"
+              placeholder="输入消息..."
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={1}
+            />
+            <button className="send-btn" onClick={handleSend} disabled={!inputValue.trim()}>发送</button>
+          </div>
+        </div>
+      </div>
+
+      {/* 音视频通话弹窗 */}
+      <AVCallModal
+        visible={showAVModal}
+        onClose={() => setShowAVModal(false)}
+        contactName={activeSession.name}
+        contactAvatar={activeSession.avatar}
+        isGroup={activeSession.isGroup}
+      />
+
+      {/* 联系人/群组信息弹窗 */}
+      <ContactInfoModal
+        visible={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+        contactId={activeSession.uuid}
+        isGroup={activeSession.isGroup}
+      />
+    </div>
+  );
+}
+
+/* ============ 管理员页面 ============ */
+function AdminPage({ onBack }) {
+  const [activeMenu, setActiveMenu] = useState('disable-user');
+  const [users, setUsers] = useState(adminUsers);
+  const [groups, setGroups] = useState(adminGroups);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [confirm, setConfirm] = useState(null);
+
+  const toggleUser = (uuid) => {
+    setSelectedUsers(prev => prev.includes(uuid) ? prev.filter(u => u !== uuid) : [...prev, uuid]);
+  };
+
+  const toggleGroup = (uuid) => {
+    setSelectedGroups(prev => prev.includes(uuid) ? prev.filter(g => g !== uuid) : [...prev, uuid]);
+  };
+
+  const toggleAllUsers = () => {
+    setSelectedUsers(prev => prev.length === users.length ? [] : users.map(u => u.uuid));
+  };
+
+  const toggleAllGroups = () => {
+    setSelectedGroups(prev => prev.length === groups.length ? [] : groups.map(g => g.uuid));
+  };
+
+  const handleAction = (action) => {
+    if (action === 'disable-users') {
+      setUsers(prev => prev.map(u => selectedUsers.includes(u.uuid) ? { ...u, status: 1 } : u));
+      setSelectedUsers([]);
+    } else if (action === 'enable-users') {
+      setUsers(prev => prev.map(u => selectedUsers.includes(u.uuid) ? { ...u, status: 0 } : u));
+      setSelectedUsers([]);
+    } else if (action === 'delete-users') {
+      setConfirm({ type: 'delete-users', title: '确认删除用户', message: `确定要删除选中的 ${selectedUsers.length} 个用户吗？此操作不可恢复。` });
+    } else if (action === 'set-admin') {
+      setUsers(prev => prev.map(u => selectedUsers.includes(u.uuid) ? { ...u, is_admin: 1 } : u));
+      setSelectedUsers([]);
+    } else if (action === 'cancel-admin') {
+      setUsers(prev => prev.map(u => selectedUsers.includes(u.uuid) ? { ...u, is_admin: 0 } : u));
+      setSelectedUsers([]);
+    } else if (action === 'disable-groups') {
+      setGroups(prev => prev.map(g => selectedGroups.includes(g.uuid) ? { ...g, status: 1 } : g));
+      setSelectedGroups([]);
+    } else if (action === 'enable-groups') {
+      setGroups(prev => prev.map(g => selectedGroups.includes(g.uuid) ? { ...g, status: 0 } : g));
+      setSelectedGroups([]);
+    } else if (action === 'delete-groups') {
+      setConfirm({ type: 'delete-groups', title: '确认解散群组', message: `确定要解散选中的 ${selectedGroups.length} 个群组吗？此操作不可恢复。` });
+    }
+  };
+
+  const handleConfirm = () => {
+    if (confirm.type === 'delete-users') {
+      setUsers(prev => prev.filter(u => !selectedUsers.includes(u.uuid)));
+      setSelectedUsers([]);
+    } else if (confirm.type === 'delete-groups') {
+      setGroups(prev => prev.filter(g => !selectedGroups.includes(g.uuid)));
+      setSelectedGroups([]);
+    }
+    setConfirm(null);
+  };
+
+  const menuItems = [
+    { key: 'disable-user', icon: '👤', label: '启用/禁用用户', group: '用户管理' },
+    { key: 'delete-user', icon: '🗑️', label: '删除用户', group: '用户管理' },
+    { key: 'set-admin', icon: '🛡️', label: '设置管理员', group: '用户管理' },
+    { key: 'disable-group', icon: '👥', label: '启用/禁用群组', group: '群组管理' },
+    { key: 'delete-group', icon: '🗑️', label: '删除/解散群组', group: '群组管理' },
+  ];
+
+  const groups_map = {};
+  menuItems.forEach(item => {
+    if (!groups_map[item.group]) groups_map[item.group] = [];
+    groups_map[item.group].push(item);
+  });
+
+  const renderContent = () => {
+    if (activeMenu === 'disable-user') {
+      return (
+        <>
+          <h2>👤 启用/禁用用户</h2>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={selectedUsers.length === users.length} onChange={toggleAllUsers} /></th>
+                <th>UUID</th><th>昵称</th><th>邮箱</th><th>管理员</th><th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.uuid}>
+                  <td><input type="checkbox" checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} /></td>
+                  <td style={{fontFamily:'monospace',fontSize:13}}>{u.uuid}</td>
+                  <td>{u.nickname}</td>
+                  <td>{u.email}</td>
+                  <td><span className={`tag ${u.is_admin ? 'tag-success' : 'tag-default'}`}>{u.is_admin ? '是' : '否'}</span></td>
+                  <td><span className={`tag ${u.status === 0 ? 'tag-success' : 'tag-danger'}`}>{u.status === 0 ? '正常' : '禁用'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="admin-actions">
+            <button className="btn-action danger" onClick={() => handleAction('disable-users')} disabled={selectedUsers.length===0}>禁用</button>
+            <button className="btn-action primary" onClick={() => handleAction('enable-users')} disabled={selectedUsers.length===0}>启用</button>
+          </div>
+        </>
+      );
+    }
+
+    if (activeMenu === 'delete-user') {
+      return (
+        <>
+          <h2>🗑️ 删除用户</h2>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={selectedUsers.length === users.length} onChange={toggleAllUsers} /></th>
+                <th>UUID</th><th>昵称</th><th>邮箱</th><th>管理员</th><th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.uuid}>
+                  <td><input type="checkbox" checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} /></td>
+                  <td style={{fontFamily:'monospace',fontSize:13}}>{u.uuid}</td>
+                  <td>{u.nickname}</td>
+                  <td>{u.email}</td>
+                  <td><span className={`tag ${u.is_admin ? 'tag-success' : 'tag-default'}`}>{u.is_admin ? '是' : '否'}</span></td>
+                  <td><span className={`tag ${u.status === 0 ? 'tag-success' : 'tag-danger'}`}>{u.status === 0 ? '正常' : '禁用'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="admin-actions">
+            <button className="btn-action danger" onClick={() => handleAction('delete-users')} disabled={selectedUsers.length===0}>删除选中</button>
+          </div>
+        </>
+      );
+    }
+
+    if (activeMenu === 'set-admin') {
+      return (
+        <>
+          <h2>🛡️ 设置管理员</h2>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={selectedUsers.length === users.length} onChange={toggleAllUsers} /></th>
+                <th>UUID</th><th>昵称</th><th>邮箱</th><th>管理员</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.uuid}>
+                  <td><input type="checkbox" checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} /></td>
+                  <td style={{fontFamily:'monospace',fontSize:13}}>{u.uuid}</td>
+                  <td>{u.nickname}</td>
+                  <td>{u.email}</td>
+                  <td><span className={`tag ${u.is_admin ? 'tag-success' : 'tag-default'}`}>{u.is_admin ? '是' : '否'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="admin-actions">
+            <button className="btn-action primary" onClick={() => handleAction('set-admin')} disabled={selectedUsers.length===0}>设为管理员</button>
+            <button className="btn-action" onClick={() => handleAction('cancel-admin')} disabled={selectedUsers.length===0}>取消管理员</button>
+          </div>
+        </>
+      );
+    }
+
+    if (activeMenu === 'disable-group') {
+      return (
+        <>
+          <h2>👥 启用/禁用群组</h2>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={selectedGroups.length === groups.length} onChange={toggleAllGroups} /></th>
+                <th>UUID</th><th>群名称</th><th>群主ID</th><th>成员数</th><th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map(g => (
+                <tr key={g.uuid}>
+                  <td><input type="checkbox" checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} /></td>
+                  <td style={{fontFamily:'monospace',fontSize:13}}>{g.uuid}</td>
+                  <td>{g.name}</td>
+                  <td style={{fontFamily:'monospace',fontSize:13}}>{g.owner_id}</td>
+                  <td>{g.member_count}</td>
+                  <td><span className={`tag ${g.status === 0 ? 'tag-success' : 'tag-danger'}`}>{g.status === 0 ? '正常' : '禁用'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="admin-actions">
+            <button className="btn-action danger" onClick={() => handleAction('disable-groups')} disabled={selectedGroups.length===0}>禁用</button>
+            <button className="btn-action primary" onClick={() => handleAction('enable-groups')} disabled={selectedGroups.length===0}>启用</button>
+          </div>
+        </>
+      );
+    }
+
+    if (activeMenu === 'delete-group') {
+      return (
+        <>
+          <h2>🗑️ 删除/解散群组</h2>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" checked={selectedGroups.length === groups.length} onChange={toggleAllGroups} /></th>
+                <th>UUID</th><th>群名称</th><th>群主ID</th><th>成员数</th><th>状态</th>
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map(g => (
+                <tr key={g.uuid}>
+                  <td><input type="checkbox" checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} /></td>
+                  <td style={{fontFamily:'monospace',fontSize:13}}>{g.uuid}</td>
+                  <td>{g.name}</td>
+                  <td style={{fontFamily:'monospace',fontSize:13}}>{g.owner_id}</td>
+                  <td>{g.member_count}</td>
+                  <td><span className={`tag ${g.status === 0 ? 'tag-success' : 'tag-danger'}`}>{g.status === 0 ? '正常' : '禁用'}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="admin-actions">
+            <button className="btn-action danger" onClick={() => handleAction('delete-groups')} disabled={selectedGroups.length===0}>解散群组</button>
+          </div>
+        </>
+      );
+    }
+  };
+
+  return (
+    <div className="admin-page">
+      <div className="admin-header">
+        <div className="admin-header-left">
+          <div className="admin-header-icon">🛡️</div>
+          <div className="admin-header-title">Admin</div>
+        </div>
+        <button className="btn-back-chat" onClick={onBack}>返回聊天</button>
+      </div>
+      <div className="admin-body">
+        <div className="admin-sidebar">
+          {Object.entries(groups_map).map(([groupName, items]) => (
+            <div key={groupName} className="admin-menu-group">
+              <div className="admin-menu-label">{groupName}</div>
+              {items.map(item => (
+                <button
+                  key={item.key}
+                  className={`admin-menu-item ${activeMenu === item.key ? 'active' : ''}`}
+                  onClick={() => setActiveMenu(item.key)}
+                >
+                  <span className="menu-icon">{item.icon}</span>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="admin-content">
+          {renderContent()}
+        </div>
+      </div>
+      {confirm && (
+        <div className="confirm-overlay" onClick={() => setConfirm(null)}>
+          <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
+            <h4>{confirm.title}</h4>
+            <p>{confirm.message}</p>
+            <div className="confirm-actions">
+              <button className="btn-action" onClick={() => setConfirm(null)}>取消</button>
+              <button className="btn-action danger" onClick={handleConfirm}>确认</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============ 音视频通话弹窗 ============ */
+function AVCallModal({ visible, onClose, contactName, contactAvatar, isGroup }) {
+  const [callStatus, setCallStatus] = useState('idle'); // idle | calling | connected | rejected
+
+  if (!visible) return null;
+
+  const handleStartCall = () => {
+    setCallStatus('calling');
+    // 模拟3秒后接通
+    setTimeout(() => setCallStatus('connected'), 3000);
+  };
+
+  const handleAnswer = () => {
+    setCallStatus('connected');
+  };
+
+  const handleReject = () => {
+    setCallStatus('rejected');
+    setTimeout(() => { setCallStatus('idle'); onClose(); }, 1500);
+  };
+
+  const handleHangup = () => {
+    setCallStatus('idle');
+    onClose();
+  };
+
+  const statusText = {
+    idle: '准备就绪',
+    calling: '等待对方接听...',
+    connected: '通话中',
+    rejected: '对方已拒绝',
+  };
+
+  return (
+    <div className="av-modal-overlay" onClick={onClose}>
+      <div className="av-modal" onClick={e => e.stopPropagation()}>
+        <div className="av-modal-header">
+          <h3>{isGroup ? '👥 群组通话' : '📞 音视频通话'}</h3>
+          <button className="av-close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="av-modal-body">
+          <div className="av-video-box">
+            <img src={currentUser.avatar} className="video-avatar" alt="我" />
+            <div className="video-name">{currentUser.name}</div>
+            <div className="av-video-label">本地</div>
+          </div>
+          <div className="av-video-box">
+            {callStatus === 'connected' ? (
+              <>
+                <img src={contactAvatar} className="video-avatar" alt={contactName} />
+                <div className="video-name">{contactName}</div>
+              </>
+            ) : (
+              <div className="video-placeholder">
+                <img src={contactAvatar} className="video-avatar" alt={contactName} style={{opacity:0.4}} />
+                <div style={{color:'rgba(255,255,255,0.4)',marginTop:8}}>等待连接</div>
+              </div>
+            )}
+            <div className="av-video-label">远程</div>
+          </div>
+        </div>
+        <div className="av-status">
+          <span className={`status-dot-inline ${callStatus}`} />
+          {statusText[callStatus]}
+        </div>
+        <div className="av-modal-footer">
+          <button className="av-btn av-btn-start" onClick={handleStartCall} disabled={callStatus !== 'idle'}>
+            <span>📞</span>
+            <span className="av-btn-label">发起</span>
+          </button>
+          <button className="av-btn av-btn-answer" onClick={handleAnswer} disabled={callStatus !== 'calling'}>
+            <span>📱</span>
+            <span className="av-btn-label">接听</span>
+          </button>
+          <button className="av-btn av-btn-reject" onClick={handleReject} disabled={callStatus !== 'calling'}>
+            <span>❌</span>
+            <span className="av-btn-label">拒绝</span>
+          </button>
+          <button className="av-btn av-btn-hangup" onClick={handleHangup} disabled={callStatus === 'idle'}>
+            <span>📵</span>
+            <span className="av-btn-label">挂断</span>
+          </button>
+          <button className="av-btn av-btn-exit" onClick={onClose}>
+            <span>🚪</span>
+            <span className="av-btn-label">退出</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ 联系人/群组信息弹窗 ============ */
+function ContactInfoModal({ visible, onClose, contactId, isGroup }) {
+  if (!visible) return null;
+
+  const detail = contactDetails[contactId];
+
+  if (!detail) {
+    return (
+      <div className="info-modal-overlay" onClick={onClose}>
+        <div className="info-modal" onClick={e => e.stopPropagation()}>
+          <div className="info-modal-header">
+            <h3>联系人信息</h3>
+            <button className="info-close-btn" onClick={onClose}>✕</button>
+          </div>
+          <div className="info-modal-body" style={{textAlign:'center',padding:'40px',color:'var(--text-secondary)'}}>
+            暂无详细信息
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isGroup) {
+    return (
+      <div className="info-modal-overlay" onClick={onClose}>
+        <div className="info-modal" onClick={e => e.stopPropagation()}>
+          <div className="info-modal-header">
+            <h3>群聊信息</h3>
+            <button className="info-close-btn" onClick={onClose}>✕</button>
+          </div>
+          <div className="info-modal-body">
+            <div className="info-avatar-section">
+              <img src={detail.contact_avatar} className="info-avatar" alt={detail.contact_name} />
+              <div className="info-name">{detail.contact_name}</div>
+              <div className="info-id">ID: {detail.contact_id}</div>
+            </div>
+            <table className="info-table">
+              <tbody>
+                <tr><td className="info-label">群主ID</td><td className="info-value" style={{fontFamily:'monospace',fontSize:13}}>{detail.contact_owner_id}</td></tr>
+                <tr><td className="info-label">成员数量</td><td className="info-value">{detail.contact_member_cnt} 人</td></tr>
+                <tr><td className="info-label">加群方式</td><td className="info-value">{detail.contact_add_mode === 0 ? '直接加入' : '需审核'}</td></tr>
+                <tr>
+                  <td className="info-label">群公告</td>
+                  <td className="info-value"><div className="info-textarea">{detail.contact_notice}</div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="info-modal-overlay" onClick={onClose}>
+      <div className="info-modal" onClick={e => e.stopPropagation()}>
+        <div className="info-modal-header">
+          <h3>个人信息</h3>
+          <button className="info-close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="info-modal-body">
+          <div className="info-avatar-section">
+            <img src={detail.contact_avatar} className="info-avatar" alt={detail.contact_name} />
+            <div className="info-name">{detail.contact_name}</div>
+            <div className="info-id">ID: {detail.contact_id}</div>
+          </div>
+          <table className="info-table">
+            <tbody>
+              <tr><td className="info-label">性别</td><td className="info-value">{detail.contact_gender === 0 ? '男' : '女'}</td></tr>
+              <tr><td className="info-label">手机</td><td className="info-value">{detail.contact_phone}</td></tr>
+              <tr><td className="info-label">邮箱</td><td className="info-value">{detail.contact_email}</td></tr>
+              <tr><td className="info-label">生日</td><td className="info-value">{detail.contact_birthday}</td></tr>
+              <tr>
+                <td className="info-label">个性签名</td>
+                <td className="info-value"><div className="info-textarea">{detail.contact_signature}</div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ 下拉菜单 ============ */
+function DropdownMenu({ isOpen, onToggle, onClose, items }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="dropdown-menu">
+      {items.map((item, i) => (
+        <button
+          key={i}
+          className="dropdown-item"
+          onClick={() => { item.onClick(); onClose(); }}
+        >
+          <span className="item-icon">{item.icon}</span>
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ============ App ============ */
+function App() {
+  const [page, setPage] = useState('login');
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+  };
+
+  const handleLogin = () => {
+    showToast('登录成功！');
+    setPage('chat');
+  };
+
+  const handleRegister = () => {
+    showToast('注册成功，请登录！');
+    setPage('login');
+  };
+
+  return (
+    <>
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+      {page === 'login' && <LoginPage onLogin={handleLogin} onSwitchToRegister={() => setPage('register')} />}
+      {page === 'register' && <RegisterPage onRegister={handleRegister} onSwitchToLogin={() => setPage('login')} />}
+      {page === 'chat' && <ChatPage onLogout={() => setPage('login')} onGoAdmin={() => setPage('admin')} />}
+      {page === 'admin' && <AdminPage onBack={() => setPage('chat')} />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

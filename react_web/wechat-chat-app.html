@@ -1,0 +1,1448 @@
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>微信风格聊天应用</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+:root {
+  --wechat-green: #07C160;
+  --wechat-green-light: #95EC69;
+  --bg-gray: #F5F5F5;
+  --sidebar-dark: #2E2E2E;
+  --white: #FFFFFF;
+  --offline-gray: #CCCCCC;
+  --text-primary: #111111;
+  --text-secondary: #6B6B6B;
+  --border-color: #E5E5E5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-gray);
+  color: var(--text-primary);
+  min-width: 800px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  height: 100vh;
+}
+
+/* 登录页面样式 */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #E8F5E9 0%, #F5F5F5 50%, #E3F2FD 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-page::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: rgba(7, 193, 96, 0.05);
+  top: -200px;
+  right: -100px;
+}
+
+.login-page::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: rgba(7, 193, 96, 0.03);
+  bottom: -100px;
+  left: -50px;
+}
+
+.login-card {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  padding: 48px;
+  width: 420px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-logo .icon {
+  width: 64px;
+  height: 64px;
+  background: var(--wechat-green);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  color: white;
+}
+
+.login-logo h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.login-logo p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* 注册页面样式 */
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #E8F5E9 0%, #F5F5F5 50%, #E3F2FD 100%);
+}
+
+.register-card {
+  background: var(--white);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  padding: 48px;
+  width: 460px;
+}
+
+/* 主聊天界面样式 */
+.chat-page {
+  height: 100vh;
+  display: flex;
+  background: var(--white);
+}
+
+/* 左侧栏 */
+.sidebar-left {
+  width: 250px;
+  background: var(--sidebar-dark);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar-left.collapsed {
+  width: 64px;
+}
+
+.sidebar-left.collapsed .sidebar-user {
+  padding: 16px 8px;
+}
+
+.sidebar-left.collapsed .user-name,
+.sidebar-left.collapsed .user-status {
+  display: none;
+}
+
+.sidebar-left.collapsed .user-avatar-wrapper {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 0;
+}
+
+.sidebar-left.collapsed .user-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.sidebar-left.collapsed .status-dot {
+  width: 10px;
+  height: 10px;
+  bottom: 0;
+  right: 0;
+}
+
+.sidebar-left.collapsed .sidebar-actions {
+  padding: 8px 6px;
+  align-items: center;
+}
+
+.sidebar-left.collapsed .sidebar-btn {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+.sidebar-left.collapsed .sidebar-btn .btn-text {
+  display: none;
+}
+
+.sidebar-left.collapsed .sidebar-settings {
+  padding: 12px 6px;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-left.collapsed .sidebar-settings .sidebar-btn {
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
+}
+
+.sidebar-left.collapsed .sidebar-settings .sidebar-btn .btn-text {
+  display: none;
+}
+
+.collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.collapse-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-user {
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-avatar-wrapper {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+}
+
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--sidebar-dark);
+}
+
+.status-dot.online {
+  background: var(--wechat-green);
+}
+
+.status-dot.offline {
+  background: var(--offline-gray);
+}
+
+.user-name {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.user-status {
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.sidebar-actions {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-btn .icon {
+  font-size: 18px;
+}
+
+.sidebar-settings {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 中间栏 */
+.sidebar-middle {
+  width: 300px;
+  background: var(--bg-gray);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.search-box {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--white);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  border-color: var(--wechat-green);
+}
+
+.session-tabs {
+  display: flex;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--white);
+}
+
+.session-tab {
+  flex: 1;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.session-tab.active {
+  color: var(--wechat-green);
+  border-bottom-color: var(--wechat-green);
+  font-weight: 500;
+}
+
+.session-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.session-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.session-item.active {
+  background: var(--white);
+}
+
+.session-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.session-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.session-name .status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.session-name .status-indicator.online {
+  background: var(--wechat-green);
+}
+
+.session-name .status-indicator.offline {
+  background: var(--offline-gray);
+}
+
+.session-preview {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.session-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.unread-badge {
+  background: #FF4D4F;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* 右侧聊天区域 */
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-gray);
+}
+
+.chat-header {
+  padding: 16px 20px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-header-info h3 {
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-header-info .status-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.chat-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-header-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-secondary);
+  transition: background 0.2s;
+}
+
+.chat-header-btn:hover {
+  background: var(--bg-gray);
+}
+
+/* 消息列表 */
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.message-item {
+  display: flex;
+  gap: 8px;
+  max-width: 80%;
+}
+
+.message-item.sent {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message-item.sent .message-content {
+  align-items: flex-end;
+}
+
+.message-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+.message-item.received .message-bubble {
+  background: var(--white);
+  border-top-left-radius: 4px;
+}
+
+.message-item.sent .message-bubble {
+  background: var(--wechat-green-light);
+  border-top-right-radius: 4px;
+}
+
+.message-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 0 4px;
+}
+
+.message-status {
+  font-size: 11px;
+  color: var(--wechat-green);
+}
+
+/* 输入区域 */
+.chat-input-area {
+  padding: 16px 20px;
+  background: var(--white);
+  border-top: 1px solid var(--border-color);
+}
+
+.input-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.toolbar-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  background: var(--bg-gray);
+  color: var(--wechat-green);
+}
+
+.input-wrapper {
+  display: flex;
+  gap: 12px;
+}
+
+.message-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  min-height: 40px;
+  max-height: 120px;
+}
+
+.message-input:focus {
+  border-color: var(--wechat-green);
+}
+
+.send-btn {
+  padding: 10px 24px;
+  background: var(--wechat-green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.send-btn:hover {
+  opacity: 0.9;
+}
+
+.send-btn:disabled {
+  background: var(--offline-gray);
+  cursor: not-allowed;
+}
+
+/* 空状态 */
+.empty-chat {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+/* 表单页面样式 */
+.login-form {
+  margin-top: 8px;
+}
+
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.avatar-upload .avatar-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--bg-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s;
+  border: 2px dashed var(--border-color);
+}
+
+.avatar-upload .avatar-preview:hover {
+  border-color: var(--wechat-green);
+}
+
+.avatar-upload .avatar-preview img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-upload span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* 时间分割线 */
+.time-divider {
+  text-align: center;
+  margin: 8px 0;
+}
+
+.time-divider span {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+
+/* 图片消息 */
+.message-image {
+  max-width: 200px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* 文件消息 */
+.file-message {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--white);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  min-width: 200px;
+}
+
+.file-icon {
+  font-size: 24px;
+  color: var(--wechat-green);
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.file-size {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.file-download {
+  color: var(--wechat-green);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* 通话消息 */
+.call-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.call-icon {
+  font-size: 18px;
+}
+
+.call-info {
+  font-size: 14px;
+}
+
+/* 表单组件样式 */
+.tabs-nav {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+
+.tab-item {
+  flex: 1;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-item.active {
+  color: var(--wechat-green);
+  border-bottom-color: var(--wechat-green);
+  font-weight: 500;
+}
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-field-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.form-input:focus {
+  border-color: var(--wechat-green);
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.form-checkbox {
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-checkbox input[type="checkbox"] {
+  accent-color: var(--wechat-green);
+}
+
+.form-link {
+  color: var(--wechat-green);
+  cursor: pointer;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.form-link:hover {
+  text-decoration: underline;
+}
+
+.form-btn {
+  width: 100%;
+  padding: 10px;
+  background: var(--wechat-green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-family: inherit;
+}
+
+.form-btn:hover {
+  opacity: 0.9;
+}
+
+.form-btn-outline {
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.form-btn-outline:hover {
+  border-color: var(--wechat-green);
+  color: var(--wechat-green);
+}
+
+.form-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.form-footer .form-link {
+  margin-left: 4px;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+// Toast 组件
+function showToast(text, type) {
+  const toast = document.createElement('div');
+  toast.textContent = text;
+  toast.style.cssText = `position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;color:#fff;background:${type==='success'?'#07C160':'#333'};box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity 0.3s;opacity:1;`;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2000);
+}
+
+// ==================== 假数据 ====================
+const currentUser = {
+  uuid: "U20260428001",
+  name: "张三",
+  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1",
+  status: 0
+};
+
+const contacts = [
+  { uuid: "U20260428002", name: "李四", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", status: 0, lastMessage: "好的，今晚见！", time: "19:30", unread: 2 },
+  { uuid: "U20260428003", name: "王五", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", status: 1, lastMessage: "文件已发送", time: "18:45", unread: 0 },
+  { uuid: "U20260428004", name: "赵六", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=4", status: 0, lastMessage: "明天开会记得带资料", time: "17:20", unread: 1 },
+  { uuid: "G20260428001", name: "项目组", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=group1", status: 0, lastMessage: "李四: 收到", time: "16:00", unread: 5, isGroup: true },
+  { uuid: "U20260428005", name: "孙七", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=5", status: 0, lastMessage: "周末一起打球", time: "昨天", unread: 0 },
+];
+
+const messagesData = {
+  "U20260428002": [
+    { uuid: "M001", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "在吗？", type: 1, createdAt: "19:25:00", status: 2 },
+    { uuid: "M002", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "在的，怎么了？", type: 1, createdAt: "19:26:00", status: 2 },
+    { uuid: "M003", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "今晚一起吃饭吗？", type: 1, createdAt: "19:27:00", status: 2 },
+    { uuid: "M004", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "好的，晚上6点老地方见！", type: 1, createdAt: "19:28:00", status: 2 },
+    { uuid: "M005", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "好的，今晚见！", type: 1, createdAt: "19:30:00", status: 1 },
+  ],
+  "U20260428003": [
+    { uuid: "M006", sendId: "U20260428003", sendName: "王五", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", content: "这是你要的文件", type: 3, createdAt: "18:40:00", status: 2, fileName: "项目方案.pdf", fileSize: "2.4MB" },
+    { uuid: "M007", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "收到，谢谢！", type: 1, createdAt: "18:42:00", status: 2 },
+    { uuid: "M008", sendId: "U20260428003", sendName: "王五", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", content: "文件已发送", type: 1, createdAt: "18:45:00", status: 2 },
+  ],
+  "U20260428004": [
+    { uuid: "M009", sendId: "U20260428004", sendName: "赵六", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=4", content: "明天开会记得带资料", type: 1, createdAt: "17:20:00", status: 2 },
+  ],
+  "G20260428001": [
+    { uuid: "M010", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "项目进度汇报一下", type: 1, createdAt: "15:50:00", status: 2 },
+    { uuid: "M011", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "我这边已经完成了前端页面", type: 1, createdAt: "15:55:00", status: 2 },
+    { uuid: "M012", sendId: "U20260428003", sendName: "王五", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=3", content: "后端接口也准备好了", type: 1, createdAt: "15:58:00", status: 2 },
+    { uuid: "M013", sendId: "U20260428002", sendName: "李四", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=2", content: "收到", type: 1, createdAt: "16:00:00", status: 2 },
+  ],
+  "U20260428005": [
+    { uuid: "M014", sendId: "U20260428005", sendName: "孙七", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=5", content: "周末一起打球", type: 1, createdAt: "昨天 14:20", status: 2 },
+    { uuid: "M015", sendId: "U20260428001", sendName: "张三", sendAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=1", content: "好啊，几点？", type: 1, createdAt: "昨天 14:25", status: 2 },
+  ],
+};
+
+// ==================== 登录页面组件 ====================
+function LoginPage({ onLogin, onSwitchToRegister }) {
+  const [loginType, setLoginType] = useState('account');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    onLogin();
+  };
+
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo">
+          <div className="icon">💬</div>
+          <h1>即时通讯</h1>
+          <p>随时随地，畅快沟通</p>
+        </div>
+
+        <div className="login-form">
+          <div className="tabs-nav">
+            <div className={`tab-item ${loginType === 'account' ? 'active' : ''}`} onClick={() => setLoginType('account')}>账号密码登录</div>
+            <div className={`tab-item ${loginType === 'email' ? 'active' : ''}`} onClick={() => setLoginType('email')}>邮箱验证码登录</div>
+          </div>
+
+          {loginType === 'account' ? (
+            <form onSubmit={handleLogin}>
+              <div className="form-field">
+                <input className="form-input" placeholder="用户名" required />
+              </div>
+              <div className="form-field">
+                <input className="form-input" type="password" placeholder="密码" required />
+              </div>
+              <div className="form-row">
+                <label className="form-checkbox"><input type="checkbox" /> 记住密码</label>
+                <a className="form-link">忘记密码？</a>
+              </div>
+              <button className="form-btn" type="submit">登录</button>
+            </form>
+          ) : (
+            <form onSubmit={handleLogin}>
+              <div className="form-field">
+                <input className="form-input" type="email" placeholder="邮箱地址" required />
+              </div>
+              <div className="form-field form-field-row">
+                <input className="form-input" placeholder="验证码" required style={{ flex: 1 }} />
+                <button type="button" className="form-btn-outline">获取验证码</button>
+              </div>
+              <button className="form-btn" type="submit">登录</button>
+            </form>
+          )}
+
+          <div className="form-footer">
+            <span>还没有账号？</span>
+            <a onClick={onSwitchToRegister} className="form-link">立即注册</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 注册页面组件 ====================
+function RegisterPage({ onRegister, onSwitchToLogin }) {
+  const [avatar, setAvatar] = useState(null);
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+    onRegister();
+  };
+
+  return (
+    <div className="register-page">
+      <div className="register-card">
+        <div className="login-logo">
+          <div className="icon">💬</div>
+          <h1>创建账号</h1>
+          <p>加入我们，开始聊天</p>
+        </div>
+
+        <div className="avatar-upload">
+          <div className="avatar-preview">
+            {avatar ? <img src={avatar} alt="头像" /> : <span>📷</span>}
+          </div>
+          <span>点击上传头像（可选）</span>
+        </div>
+
+        <form onSubmit={handleRegister}>
+          <div className="form-field">
+            <input className="form-input" placeholder="用户名" required />
+          </div>
+          <div className="form-field">
+            <input className="form-input" type="password" placeholder="密码（至少6位）" required minLength={6} />
+          </div>
+          <div className="form-field">
+            <input className="form-input" type="password" placeholder="确认密码" required />
+          </div>
+          <div className="form-field">
+            <input className="form-input" type="email" placeholder="邮箱地址" required />
+          </div>
+          <div className="form-field form-field-row">
+            <input className="form-input" placeholder="验证码" required style={{ flex: 1 }} />
+            <button type="button" className="form-btn-outline">获取验证码</button>
+          </div>
+          <button className="form-btn" type="submit">注册</button>
+        </form>
+
+        <div className="form-footer">
+          <span>已有账号？</span>
+          <a onClick={onSwitchToLogin} className="form-link">返回登录</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 消息气泡组件 ====================
+function MessageBubble({ message, isSent }) {
+  const renderContent = () => {
+    switch (message.type) {
+      case 1: // 文本
+        return <div className="message-bubble">{message.content}</div>;
+      case 2: // 图片
+        return (
+          <div className="message-bubble" style={{ padding: '4px' }}>
+            <img src={message.imageUrl || "https://via.placeholder.com/200x150"} alt="图片" className="message-image" />
+          </div>
+        );
+      case 3: // 文件
+        return (
+          <div className="file-message">
+            <span className="file-icon">📄</span>
+            <div className="file-info">
+              <div className="file-name">{message.fileName || "文件"}</div>
+              <div className="file-size">{message.fileSize || "未知大小"}</div>
+            </div>
+            <span className="file-download">⬇️</span>
+          </div>
+        );
+      case 4: // 通话
+        return (
+          <div className="message-bubble">
+            <div className="call-message">
+              <span className="call-icon">{message.callType === 'video' ? '📹' : '📞'}</span>
+              <span className="call-info">{message.callStatus || "通话结束"} {message.callDuration || ""}</span>
+            </div>
+          </div>
+        );
+      default:
+        return <div className="message-bubble">{message.content}</div>;
+    }
+  };
+
+  return (
+    <div className={`message-item ${isSent ? 'sent' : 'received'}`}>
+      <img src={message.sendAvatar} alt={message.sendName} className="message-avatar" />
+      <div className="message-content">
+        {renderContent()}
+        <div className="message-time">
+          {message.createdAt}
+          {isSent && message.status !== undefined && (
+            <span className="message-status" style={{ marginLeft: '4px' }}>
+              {message.status === 1 ? '✓' : message.status === 2 ? '✓✓' : ''}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 主聊天界面组件 ====================
+function ChatPage({ onLogout }) {
+  const [activeSession, setActiveSession] = useState(contacts[0]);
+  const [messages, setMessages] = useState(messagesData);
+  const [inputValue, setInputValue] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [unreadMap, setUnreadMap] = useState(() => {
+    const map = {};
+    contacts.forEach(c => {
+      if (c.unread > 0) map[c.uuid] = c.unread;
+    });
+    return map;
+  });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const messageListRef = useRef(null);
+
+  useEffect(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+    }
+  }, [messages, activeSession]);
+
+  const handleSessionClick = (contact) => {
+    setActiveSession(contact);
+    setUnreadMap(prev => {
+      const next = { ...prev };
+      delete next[contact.uuid];
+      return next;
+    });
+  };
+
+  const handleSend = () => {
+    if (!inputValue.trim()) return;
+
+    const newMessage = {
+      uuid: `M${Date.now()}`,
+      sendId: currentUser.uuid,
+      sendName: currentUser.name,
+      sendAvatar: currentUser.avatar,
+      content: inputValue,
+      type: 1,
+      createdAt: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+      status: 1,
+    };
+
+    setMessages(prev => ({
+      ...prev,
+      [activeSession.uuid]: [...(prev[activeSession.uuid] || []), newMessage],
+    }));
+    setInputValue('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const filteredContacts = contacts.filter(c => {
+    if (activeTab === 'contacts') return !c.isGroup;
+    if (activeTab === 'groups') return c.isGroup;
+    return true;
+  });
+
+  const currentMessages = messages[activeSession.uuid] || [];
+
+  return (
+    <div className="chat-page">
+      {/* 左侧栏 */}
+      <div className={`sidebar-left ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-user">
+          <div className="user-avatar-wrapper">
+            <img src={currentUser.avatar} alt={currentUser.name} className="user-avatar" />
+            <div className={`status-dot ${currentUser.status === 0 ? 'online' : 'offline'}`} />
+          </div>
+          <div className="user-name">{currentUser.name}</div>
+          <div className="user-status">{currentUser.status === 0 ? '在线' : '离线'}</div>
+        </div>
+
+        <div className="sidebar-actions">
+          <button className="sidebar-btn">
+            <span className="icon">🔍</span>
+            <span className="btn-text">搜索好友</span>
+          </button>
+          <button className="sidebar-btn">
+            <span className="icon">➕</span>
+            <span className="btn-text">添加好友</span>
+          </button>
+          <button className="sidebar-btn">
+            <span className="icon">👥</span>
+            <span className="btn-text">创建群组</span>
+          </button>
+        </div>
+
+        <div className="sidebar-settings">
+          <button className="sidebar-btn" onClick={onLogout}>
+            <span className="icon">⚙️</span>
+            <span className="btn-text">设置</span>
+          </button>
+        </div>
+
+        <button
+          className="collapse-btn"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          title={sidebarCollapsed ? '展开侧栏' : '收起侧栏'}
+        >
+          {sidebarCollapsed ? '›' : '‹'}
+        </button>
+      </div>
+
+      {/* 中间栏 */}
+      <div className="sidebar-middle">
+        <div className="search-box">
+          <input
+            className="search-input"
+            placeholder="搜索联系人/群组"
+          />
+        </div>
+
+        <div className="session-tabs">
+          <div
+            className={`session-tab ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all')}
+          >
+            全部
+          </div>
+          <div
+            className={`session-tab ${activeTab === 'contacts' ? 'active' : ''}`}
+            onClick={() => setActiveTab('contacts')}
+          >
+            联系人
+          </div>
+          <div
+            className={`session-tab ${activeTab === 'groups' ? 'active' : ''}`}
+            onClick={() => setActiveTab('groups')}
+          >
+            群组
+          </div>
+        </div>
+
+        <div className="session-list">
+          {filteredContacts.map(contact => (
+            <div
+              key={contact.uuid}
+              className={`session-item ${activeSession.uuid === contact.uuid ? 'active' : ''}`}
+              onClick={() => handleSessionClick(contact)}
+            >
+              <img src={contact.avatar} alt={contact.name} className="session-avatar" />
+              <div className="session-info">
+                <div className="session-name">
+                  {contact.name}
+                  {!contact.isGroup && (
+                    <span className={`status-indicator ${contact.status === 0 ? 'online' : 'offline'}`} />
+                  )}
+                </div>
+                <div className="session-preview">{contact.lastMessage}</div>
+              </div>
+              <div className="session-meta">
+                <span className="session-time">{contact.time}</span>
+                {unreadMap[contact.uuid] > 0 && (
+                  <span className="unread-badge">
+                    {unreadMap[contact.uuid] > 99 ? '99+' : unreadMap[contact.uuid]}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 右侧聊天区域 */}
+      <div className="chat-main">
+        <div className="chat-header">
+          <div className="chat-header-left">
+            <img src={activeSession.avatar} alt={activeSession.name} className="chat-header-avatar" />
+            <div className="chat-header-info">
+              <h3>
+                {activeSession.name}
+                {!activeSession.isGroup && (
+                  <span className={`status-indicator ${activeSession.status === 0 ? 'online' : 'offline'}`} />
+                )}
+              </h3>
+              <div className="status-text">
+                {activeSession.isGroup ? '群聊' : (activeSession.status === 0 ? '在线' : '离线')}
+              </div>
+            </div>
+          </div>
+          <div className="chat-header-actions">
+            <button className="chat-header-btn" title="音视频通话">📹</button>
+            <button className="chat-header-btn" title="更多">⋯</button>
+          </div>
+        </div>
+
+        <div className="message-list" ref={messageListRef}>
+          {currentMessages.map(msg => (
+            <MessageBubble
+              key={msg.uuid}
+              message={msg}
+              isSent={msg.sendId === currentUser.uuid}
+            />
+          ))}
+        </div>
+
+        <div className="chat-input-area">
+          <div className="input-toolbar">
+            <button className="toolbar-btn" title="表情">😊</button>
+            <button className="toolbar-btn" title="文件">📎</button>
+            <button className="toolbar-btn" title="图片">🖼️</button>
+            <button className="toolbar-btn" title="截图">✂️</button>
+          </div>
+          <div className="input-wrapper">
+            <textarea
+              className="message-input"
+              placeholder="输入消息..."
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={1}
+            />
+            <button
+              className="send-btn"
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+            >
+              发送
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==================== 应用主组件 ====================
+function App() {
+  const [page, setPage] = useState('login'); // login | register | chat
+
+  const handleLogin = () => {
+    showToast('登录成功！', 'success');
+    setPage('chat');
+  };
+
+  const handleRegister = () => {
+    showToast('注册成功，请登录！', 'success');
+    setPage('login');
+  };
+
+  const handleLogout = () => {
+    setPage('login');
+  };
+
+  if (page === 'login') {
+    return <LoginPage onLogin={handleLogin} onSwitchToRegister={() => setPage('register')} />;
+  }
+
+  if (page === 'register') {
+    return <RegisterPage onRegister={handleRegister} onSwitchToLogin={() => setPage('login')} />;
+  }
+
+  return <ChatPage onLogout={handleLogout} />;
+}
+
+// ==================== 渲染 ====================
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
