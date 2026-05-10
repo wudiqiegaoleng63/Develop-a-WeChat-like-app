@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/useAuthStore'
 import { sendEmailCode } from '../api/auth'
@@ -18,6 +18,13 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [codeCooldown, setCodeCooldown] = useState(0)
   const [loading, setLoading] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [])
 
   const handleSendCode = async () => {
     if (!email.trim()) {
@@ -28,9 +35,10 @@ export default function LoginPage() {
     if (res.code === 200) {
       showToast('验证码已发送', 'success')
       setCodeCooldown(60)
-      const timer = setInterval(() => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      timerRef.current = setInterval(() => {
         setCodeCooldown(prev => {
-          if (prev <= 1) { clearInterval(timer); return 0 }
+          if (prev <= 1) { if (timerRef.current) clearInterval(timerRef.current); timerRef.current = null; return 0 }
           return prev - 1
         })
       }, 1000)

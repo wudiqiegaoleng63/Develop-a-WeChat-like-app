@@ -6,11 +6,12 @@ class WebSocketService {
   private ws: WebSocket | null = null
   private messageHandlers: Set<MessageHandler> = new Set()
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
+  private maxReconnectAttempts = 10
   private clientId: string = ''
   private wsBaseUrl: string = ''
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private isConnecting = false
+  private intentionalClose = false
 
   connect(clientId: string, wsBaseUrl: string): void {
     // Prevent duplicate connections
@@ -20,6 +21,7 @@ class WebSocketService {
     this.clientId = clientId
     this.wsBaseUrl = wsBaseUrl
     this.reconnectAttempts = 0
+    this.intentionalClose = false
     this.doConnect()
   }
 
@@ -63,8 +65,8 @@ class WebSocketService {
         console.log('[WS] Disconnected, code:', event.code)
         this.isConnecting = false
         this.ws = null
-        // Only reconnect on abnormal closure
-        if (event.code !== 1000 && event.code !== 1001) {
+        // Only reconnect if not an intentional close
+        if (!this.intentionalClose) {
           this.attemptReconnect()
         }
       }
@@ -82,6 +84,7 @@ class WebSocketService {
 
   private attemptReconnect(): void {
     if (this.reconnectTimer) return
+    if (this.intentionalClose) return
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.log('[WS] Max reconnect attempts reached')
       return
@@ -113,8 +116,7 @@ class WebSocketService {
   }
 
   disconnect(): void {
-    this.clientId = ''
-    this.reconnectAttempts = this.maxReconnectAttempts
+    this.intentionalClose = true
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null

@@ -2,6 +2,23 @@ import React from 'react'
 import type { ChatMessage } from '../../types/message'
 import { MessageType } from '../../types/message'
 import { useAuthStore } from '../../stores/useAuthStore'
+import { BACKEND_URL } from '../../utils/constants'
+
+async function downloadFile(url: string, fileName: string) {
+  try {
+    const rsp = await fetch(url.startsWith('http') ? url : BACKEND_URL + url)
+    const blob = await rsp.blob()
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(link.href)
+  } catch (e) {
+    console.error('Download failed:', e)
+  }
+}
 
 interface Props {
   message: ChatMessage
@@ -14,16 +31,25 @@ export default function MessageBubble({ message }: Props) {
   const renderContent = () => {
     switch (message.type) {
       case MessageType.FILE:
-        return (
-          <div className="file-message">
-            <span className="file-icon">📄</span>
-            <div className="file-info">
-              <div className="file-name">{message.file_name || '文件'}</div>
-              <div className="file-size">{message.file_size || '未知大小'}</div>
+        if (message.file_type?.startsWith('image/') && message.url) {
+          return (
+            <div className="message-bubble" style={{ padding: 4, background: 'transparent' }}>
+              <img src={message.url} alt={message.file_name || '图片'} className="chat-image" />
             </div>
-            {message.url && (
-              <a href={message.url} target="_blank" rel="noopener noreferrer" className="file-download">↓</a>
-            )}
+          )
+        }
+        return (
+          <div className="message-bubble">
+            <div className="file-message">
+              <span className="file-icon">📄</span>
+              <div className="file-info">
+                <div className="file-name">{message.file_name || '文件'}</div>
+                <div className="file-size">{message.file_size || '未知大小'}</div>
+              </div>
+              {message.url && (
+                <button className="file-download" onClick={() => downloadFile(message.url!, message.file_name || '文件')}>↓</button>
+              )}
+            </div>
           </div>
         )
       case MessageType.AV:

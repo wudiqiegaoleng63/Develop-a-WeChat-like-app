@@ -8,40 +8,27 @@ import { showToast } from '../utils/toast'
 import type { UserInfo } from '../types/user'
 import type { GroupInfo } from '../types/group'
 
-function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: () => void; label?: string }) {
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    console.log('[Checkbox] clicked, label:', label, 'checked before:', checked)
-    onChange()
-  }
+function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      aria-checked={checked}
-      role="checkbox"
+    <span
+      onClick={(e) => { e.stopPropagation(); onChange() }}
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 18, height: 18,
-        padding: 0,
+        display: 'inline-block',
+        width: 16, height: 16,
         border: `2px solid ${checked ? '#07C160' : '#ccc'}`,
         borderRadius: 3,
         cursor: 'pointer',
-        backgroundColor: checked ? '#07C160' : '#fff',
+        backgroundColor: checked ? '#07C160' : 'transparent',
         position: 'relative',
-        flexShrink: 0,
-        outline: 'none',
+        verticalAlign: 'middle',
       }}
     >
       {checked && (
-        <svg width="10" height="8" viewBox="0 0 10 8" fill="none" style={{ position: 'absolute' }}>
+        <svg width="10" height="8" viewBox="0 0 10 8" fill="none" style={{ position: 'absolute', top: 1, left: 1 }}>
           <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
-    </button>
+    </span>
   )
 }
 
@@ -68,8 +55,7 @@ export default function ManagerPage() {
 
   useEffect(() => {
     const currentUser = useAuthStore.getState().userInfo
-    console.log('[ManagerPage] useEffect fired, activeMenu:', activeMenu)
-    if (!currentUser || currentUser.is_admin !== 1) {
+    if (!currentUser || currentUser.isAdmin !== 1) {
       navigate('/chat')
       return
     }
@@ -83,17 +69,12 @@ export default function ManagerPage() {
     try {
       if (activeMenu === 'disable-group' || activeMenu === 'delete-group') {
         const res = await getGroupInfoList()
-        console.log('[ManagerPage] getGroupInfoList response:', JSON.stringify(res.data?.slice(0, 2)))
         if (res.code === 200 && res.data) {
           setGroups(res.data)
         }
       } else {
         const res = await getUserInfoList(currentUser.uuid)
         if (res.code === 200 && res.data) {
-          console.log('[ManagerPage] user data count:', res.data.length)
-          res.data.forEach((u: any, i: number) => {
-            console.log(`[ManagerPage] user[${i}] uuid=`, u.uuid, 'type:', typeof u.uuid, 'keys:', Object.keys(u))
-          })
           setUsers(res.data)
         }
       }
@@ -105,13 +86,7 @@ export default function ManagerPage() {
   }
 
   const toggleUser = (uuid: string) => {
-    console.log('[ManagerPage] toggleUser uuid:', uuid)
-    setSelectedUsers(prev => {
-      const exists = prev.includes(uuid)
-      const next = exists ? prev.filter(u => u !== uuid) : [...prev, uuid]
-      console.log('[ManagerPage] selectedUsers prev:', JSON.stringify(prev), 'next:', JSON.stringify(next))
-      return next
-    })
+    setSelectedUsers(prev => prev.includes(uuid) ? prev.filter(u => u !== uuid) : [...prev, uuid])
   }
 
   const toggleGroup = (uuid: string) => {
@@ -119,8 +94,6 @@ export default function ManagerPage() {
   }
 
   const toggleAllUsers = () => {
-    console.log('[ManagerPage] toggleAllUsers called! users.length:', users.length)
-    console.trace('[ManagerPage] toggleAllUsers call stack:')
     setSelectedUsers(prev => prev.length === users.length ? [] : users.map(u => u.uuid))
   }
 
@@ -273,18 +246,18 @@ export default function ManagerPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th><Checkbox checked={allUsersSelected} onChange={toggleAllUsers} label="全选用户" /></th>
+                <th><Checkbox checked={allUsersSelected} onChange={toggleAllUsers} /></th>
                 <th>UUID</th><th>昵称</th><th>邮箱</th><th>管理员</th><th>状态</th>
               </tr>
             </thead>
             <tbody>
               {users.map(u => (
                 <tr key={u.uuid}>
-                  <td><Checkbox checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} label={`用户-${u.uuid}`} /></td>
+                  <td><Checkbox checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} /></td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{u.uuid}</td>
                   <td>{u.nickname}</td>
                   <td>{u.email}</td>
-                  <td><span className={`tag ${u.is_admin ? 'tag-success' : 'tag-default'}`}>{u.is_admin ? '是' : '否'}</span></td>
+                  <td><span className={`tag ${u.isAdmin ? 'tag-success' : 'tag-default'}`}>{u.isAdmin ? '是' : '否'}</span></td>
                   <td><span className={`tag ${u.status === 0 ? 'tag-success' : 'tag-danger'}`}>{u.status === 0 ? '正常' : '禁用'}</span></td>
                 </tr>
               ))}
@@ -305,18 +278,18 @@ export default function ManagerPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th><Checkbox checked={allUsersSelected} onChange={toggleAllUsers} label="全选用户" /></th>
+                <th><Checkbox checked={allUsersSelected} onChange={toggleAllUsers} /></th>
                 <th>UUID</th><th>昵称</th><th>邮箱</th><th>管理员</th><th>状态</th>
               </tr>
             </thead>
             <tbody>
               {users.map(u => (
                 <tr key={u.uuid}>
-                  <td><Checkbox checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} label={`用户-${u.uuid}`} /></td>
+                  <td><Checkbox checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} /></td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{u.uuid}</td>
                   <td>{u.nickname}</td>
                   <td>{u.email}</td>
-                  <td><span className={`tag ${u.is_admin ? 'tag-success' : 'tag-default'}`}>{u.is_admin ? '是' : '否'}</span></td>
+                  <td><span className={`tag ${u.isAdmin ? 'tag-success' : 'tag-default'}`}>{u.isAdmin ? '是' : '否'}</span></td>
                   <td><span className={`tag ${u.status === 0 ? 'tag-success' : 'tag-danger'}`}>{u.status === 0 ? '正常' : '禁用'}</span></td>
                 </tr>
               ))}
@@ -336,18 +309,18 @@ export default function ManagerPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th><Checkbox checked={allUsersSelected} onChange={toggleAllUsers} label="全选用户" /></th>
+                <th><Checkbox checked={allUsersSelected} onChange={toggleAllUsers} /></th>
                 <th>UUID</th><th>昵称</th><th>邮箱</th><th>管理员</th>
               </tr>
             </thead>
             <tbody>
               {users.map(u => (
                 <tr key={u.uuid}>
-                  <td><Checkbox checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} label={`用户-${u.uuid}`} /></td>
+                  <td><Checkbox checked={selectedUsers.includes(u.uuid)} onChange={() => toggleUser(u.uuid)} /></td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{u.uuid}</td>
                   <td>{u.nickname}</td>
                   <td>{u.email}</td>
-                  <td><span className={`tag ${u.is_admin ? 'tag-success' : 'tag-default'}`}>{u.is_admin ? '是' : '否'}</span></td>
+                  <td><span className={`tag ${u.isAdmin ? 'tag-success' : 'tag-default'}`}>{u.isAdmin ? '是' : '否'}</span></td>
                 </tr>
               ))}
             </tbody>
@@ -367,18 +340,18 @@ export default function ManagerPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th><Checkbox checked={allGroupsSelected} onChange={toggleAllGroups} label="全选群组" /></th>
+                <th><Checkbox checked={allGroupsSelected} onChange={toggleAllGroups} /></th>
                 <th>UUID</th><th>群名称</th><th>群主ID</th><th>成员数</th><th>状态</th>
               </tr>
             </thead>
             <tbody>
               {groups.map(g => (
                 <tr key={g.uuid}>
-                  <td><Checkbox checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} label={`群组-${g.uuid}`} /></td>
+                  <td><Checkbox checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} /></td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{g.uuid}</td>
                   <td>{g.name}</td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{g.owner_id}</td>
-                  <td>{g.member_count}</td>
+                  <td>{g.member_cnt}</td>
                   <td><span className={`tag ${g.status === 0 ? 'tag-success' : 'tag-danger'}`}>{g.status === 0 ? '正常' : '禁用'}</span></td>
                 </tr>
               ))}
@@ -399,18 +372,18 @@ export default function ManagerPage() {
           <table className="admin-table">
             <thead>
               <tr>
-                <th><Checkbox checked={allGroupsSelected} onChange={toggleAllGroups} label="全选群组" /></th>
+                <th><Checkbox checked={allGroupsSelected} onChange={toggleAllGroups} /></th>
                 <th>UUID</th><th>群名称</th><th>群主ID</th><th>成员数</th><th>状态</th>
               </tr>
             </thead>
             <tbody>
               {groups.map(g => (
                 <tr key={g.uuid}>
-                  <td><Checkbox checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} label={`群组-${g.uuid}`} /></td>
+                  <td><Checkbox checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} /></td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{g.uuid}</td>
                   <td>{g.name}</td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{g.owner_id}</td>
-                  <td>{g.member_count}</td>
+                  <td>{g.member_cnt}</td>
                   <td><span className={`tag ${g.status === 0 ? 'tag-success' : 'tag-danger'}`}>{g.status === 0 ? '正常' : '禁用'}</span></td>
                 </tr>
               ))}

@@ -3,11 +3,15 @@ import { Modal } from 'antd'
 import { useChatStore } from '../../stores/useChatStore'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { deleteSession } from '../../api/session'
-import { deleteContact, blackContact } from '../../api/contact'
+import { deleteContact, blackContact, cancelBlackContact } from '../../api/contact'
+import { getCurContactListInChatRoom } from '../../api/chatroom'
 import { leaveGroup, dismissGroup } from '../../api/group'
 import { showToast } from '../../utils/toast'
 import AVCallModal from './AVCallModal'
 import ContactInfoModal from './ContactInfoModal'
+import EditGroupInfoModal from '../group/EditGroupInfoModal'
+import RemoveGroupMembersModal from '../group/RemoveGroupMembersModal'
+import GroupJoinRequestsModal from '../group/GroupJoinRequestsModal'
 
 export default function ChatHeader() {
   const contactInfo = useChatStore(state => state.contactInfo)
@@ -18,6 +22,10 @@ export default function ChatHeader() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [avModalVisible, setAvModalVisible] = useState(false)
   const [infoModalVisible, setInfoModalVisible] = useState(false)
+  const [editGroupVisible, setEditGroupVisible] = useState(false)
+  const [removeMembersVisible, setRemoveMembersVisible] = useState(false)
+  const [joinRequestsVisible, setJoinRequestsVisible] = useState(false)
+  const [onlineMembersVisible, setOnlineMembersVisible] = useState(false)
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -34,7 +42,7 @@ export default function ChatHeader() {
   if (!contactInfo || !userInfo) return null
 
   const isGroup = contactInfo.contact_id.startsWith('G')
-  const isOwner = isGroup && contactInfo.contact_owner_id === userInfo.uuid
+  const isOwner = isGroup && !!contactInfo.contact_owner_id && contactInfo.contact_owner_id === userInfo.uuid
 
   const handleDeleteSession = () => {
     Modal.confirm({
@@ -85,6 +93,21 @@ export default function ChatHeader() {
     })
   }
 
+  const handleCancelBlackContact = () => {
+    Modal.confirm({
+      title: '取消拉黑',
+      content: `确定要取消拉黑 ${contactInfo.contact_name} 吗？`,
+      onOk: async () => {
+        const res = await cancelBlackContact({ owner_id: userInfo.uuid, contact_id: contactInfo.contact_id })
+        if (res.code === 200) {
+          showToast('已取消拉黑', 'success')
+        } else {
+          showToast(res.message || '操作失败', 'error')
+        }
+      },
+    })
+  }
+
   const handleLeaveGroup = () => {
     Modal.confirm({
       title: '确认退出',
@@ -122,11 +145,12 @@ export default function ChatHeader() {
   const menuItems = isGroup
     ? [
         { icon: '👥', label: '群聊信息', onClick: () => setInfoModalVisible(true) },
+        { icon: '🟢', label: '在线成员', onClick: () => setOnlineMembersVisible(true) },
         ...(isOwner
           ? [
-              { icon: '✏️', label: '修改群聊信息', onClick: () => showToast('修改群聊信息功能开发中', 'info') },
-              { icon: '🚫', label: '移除群组人员', onClick: () => showToast('移除群组人员功能开发中', 'info') },
-              { icon: '📋', label: '加群申请', onClick: () => showToast('加群申请功能开发中', 'info') },
+              { icon: '✏️', label: '修改群聊信息', onClick: () => setEditGroupVisible(true) },
+              { icon: '🚫', label: '移除群组人员', onClick: () => setRemoveMembersVisible(true) },
+              { icon: '📋', label: '加群申请', onClick: () => setJoinRequestsVisible(true) },
             ]
           : []),
         { icon: '🗑️', label: '删除该会话', onClick: handleDeleteSession },
@@ -139,6 +163,7 @@ export default function ChatHeader() {
         { icon: '🗑️', label: '删除该会话', onClick: handleDeleteSession },
         { icon: '❌', label: '删除联系人', onClick: handleDeleteContact, danger: true },
         { icon: '🚫', label: '拉黑联系人', onClick: handleBlackContact, danger: true },
+        { icon: '✅', label: '取消拉黑', onClick: handleCancelBlackContact },
       ]
 
   return (
@@ -149,7 +174,7 @@ export default function ChatHeader() {
           <div className="chat-header-info">
             <h3>{contactInfo.contact_name}</h3>
             <div className="status-text">
-              {isGroup ? `${contactInfo.contact_member_cnt || 0}人` : (contactInfo.contact_signature || '')}
+              {isGroup ? `${contactInfo.contact_member_cnt ?? 0}人` : (contactInfo.contact_signature || '')}
             </div>
           </div>
         </div>
@@ -175,17 +200,61 @@ export default function ChatHeader() {
         </div>
       </div>
 
-      <AVCallModal
-        visible={avModalVisible}
-        onClose={() => setAvModalVisible(false)}
-      />
-
-      <ContactInfoModal
-        visible={infoModalVisible}
-        onClose={() => setInfoModalVisible(false)}
-        contactInfo={contactInfo}
-        isGroup={isGroup}
-      />
+      <AVCallModal visible={avModalVisible} onClose={() => setAvModalVisible(false)} />
+      <ContactInfoModal visible={infoModalVisible} onClose={() => setInfoModalVisible(false)} contactInfo={contactInfo} isGroup={isGroup} />
+      {isGroup && (
+        <>
+          <OnlineMembersModal visible={onlineMembersVisible} onClose={() => setOnlineMembersVisible(false)} groupId={contactInfo.contact_id} userId={userInfo.uuid} />
+          {isOwner && (
+            <>
+              <EditGroupInfoModal visible={editGroupVisible} onClose={() => setEditGroupVisible(false)} />
+              <RemoveGroupMembersModal visible={removeMembersVisible} onClose={() => setRemoveMembersVisible(false)} />
+              <GroupJoinRequestsModal visible={joinRequestsVisible} onClose={() => setJoinRequestsVisible(false)} />
+            </>
+          )}
+        </>
+      )}
     </>
+  )
+}
+
+function OnlineMembersModal({ visible, onClose, groupId, userId }: { visible: boolean; onClose: () => void; groupId: string; userId: string }) {
+  const [members, setMembers] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (visible) {
+      setLoading(true)
+      getCurContactListInChatRoom({ owner_id: userId, contact_id: groupId }).then(res => {
+        if (res.code === 200 && res.data) {
+          setMembers(res.data.map(m => m.contact_id))
+        }
+      }).finally(() => setLoading(false))
+    }
+  }, [visible, groupId, userId])
+
+  if (!visible) return null
+
+  return (
+    <div className="info-modal-overlay" onClick={onClose}>
+      <div className="info-modal" onClick={e => e.stopPropagation()} style={{ width: 320 }}>
+        <div className="info-modal-header">
+          <h3>在线成员</h3>
+          <button className="info-close-btn" onClick={onClose}>×</button>
+        </div>
+        <div className="info-modal-body" style={{ maxHeight: 300, overflowY: 'auto' }}>
+          {loading && <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-secondary)' }}>加载中...</div>}
+          {!loading && members.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-secondary)' }}>暂无在线成员</div>
+          )}
+          {members.map(id => (
+            <div key={id} className="contact-user-item" style={{ padding: '6px 0' }}>
+              <span className="status-indicator online" />
+              <span style={{ marginLeft: 8, fontFamily: 'monospace', fontSize: 13 }}>{id}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }

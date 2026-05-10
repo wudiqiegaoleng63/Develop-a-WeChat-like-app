@@ -21,7 +21,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   if (!userInfo) {
     return <Navigate to="/login" replace />
   }
-  if (userInfo.is_admin !== 1) {
+  if (userInfo.isAdmin !== 1) {
     return <Navigate to="/chat" replace />
   }
   return <>{children}</>

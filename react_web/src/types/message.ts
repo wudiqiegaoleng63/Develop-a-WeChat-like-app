@@ -6,9 +6,9 @@ export enum MessageType {
   AV = 3,
 }
 
+// Matches GetMessageListRespond / GetGroupMessageListRespond
+// Backend does NOT return uuid or session_id in message list
 export interface ChatMessage {
-  uuid: string
-  session_id: string
   send_id: string
   send_name: string
   send_avatar: string
@@ -20,7 +20,12 @@ export interface ChatMessage {
   file_name: string
   file_type: string
   created_at: string
-  status: number
+  // Client-only fields for optimistic updates
+  uuid?: string
+  session_id?: string
+  status?: number
+  // AV signaling data
+  av_data?: string
 }
 
 export interface ChatMessageRequest {
@@ -35,4 +40,5 @@ export interface ChatMessageRequest {
   file_size: string
   file_name: string
   file_type: string
+  av_data?: string
 }

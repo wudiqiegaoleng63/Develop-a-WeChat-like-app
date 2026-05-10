@@ -1,8 +1,8 @@
 import api from './axios'
 import type { ApiResponse } from '../types/api'
-import type { ContactInfo, ContactUser } from '../types/user'
+import type { ContactInfo, SearchUser, ContactRequest, JoinedGroup } from '../types/user'
 
-export async function getUserList(owner_id: string): Promise<ApiResponse<ContactUser[]>> {
+export async function getUserList(owner_id: string): Promise<ApiResponse<SearchUser[]>> {
   const res = await api.post('/contact/getUserList', { owner_id })
   return res.data
 }
@@ -17,7 +17,7 @@ export async function applyContact(data: { owner_id: string; contact_id: string;
   return res.data
 }
 
-export async function getNewContactList(owner_id: string): Promise<ApiResponse<ContactInfo[]>> {
+export async function getNewContactList(owner_id: string): Promise<ApiResponse<ContactRequest[]>> {
   const res = await api.post('/contact/getNewContactList', { owner_id })
   return res.data
 }
@@ -52,12 +52,12 @@ export async function blackApply(data: { owner_id: string; contact_id: string })
   return res.data
 }
 
-export async function getAddGroupList(group_id: string): Promise<ApiResponse<ContactInfo[]>> {
+export async function getAddGroupList(group_id: string): Promise<ApiResponse<ContactRequest[]>> {
   const res = await api.post('/contact/getAddGroupList', { group_id })
   return res.data
 }
 
-export async function loadMyJoinedGroup(owner_id: string): Promise<ApiResponse<ContactInfo[]>> {
+export async function loadMyJoinedGroup(owner_id: string): Promise<ApiResponse<JoinedGroup[]>> {
   const res = await api.post('/contact/loadMyJoinedGroup', { owner_id })
   return res.data
 }

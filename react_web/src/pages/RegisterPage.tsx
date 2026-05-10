@@ -15,10 +15,12 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const avatarUrlRef = useRef<string | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     return () => {
       if (avatarUrlRef.current) URL.revokeObjectURL(avatarUrlRef.current)
+      if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [])
 
@@ -45,9 +47,10 @@ export default function RegisterPage() {
     if (res.code === 200) {
       showToast('验证码已发送', 'success')
       setCodeCooldown(60)
-      const timer = setInterval(() => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      timerRef.current = setInterval(() => {
         setCodeCooldown(prev => {
-          if (prev <= 1) { clearInterval(timer); return 0 }
+          if (prev <= 1) { if (timerRef.current) clearInterval(timerRef.current); timerRef.current = null; return 0 }
           return prev - 1
         })
       }, 1000)
@@ -77,8 +80,8 @@ export default function RegisterPage() {
     })
     setLoading(false)
     if (success) {
-      showToast('注册成功，请登录', 'success')
-      navigate('/login')
+      showToast('注册成功', 'success')
+      navigate('/chat')
     }
   }
 

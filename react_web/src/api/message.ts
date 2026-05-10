@@ -15,17 +15,13 @@ export async function getGroupMessageList(group_id: string): Promise<ApiResponse
 export async function uploadFile(file: File): Promise<ApiResponse<null>> {
   const formData = new FormData()
   formData.append('file', file)
-  const res = await api.post('/message/uploadFile', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const res = await api.post('/message/uploadFile', formData)
   return res.data
 }
 
 export async function uploadAvatar(file: File): Promise<ApiResponse<null>> {
   const formData = new FormData()
   formData.append('file', file)
-  const res = await api.post('/message/uploadAvatar', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  const res = await api.post('/message/uploadAvatar', formData)
   return res.data
 }

@@ -3,7 +3,7 @@ import type { ChatMessage, ChatMessageRequest } from '../types/message'
 import { MessageType } from '../types/message'
 import type { UserSession, GroupSession } from '../types/session'
 import type { ContactInfo } from '../types/user'
-import { getUserSessionList, getGroupSessionList, openSession } from '../api/session'
+import { getUserSessionList, getGroupSessionList, openSession, checkOpenSessionAllowed } from '../api/session'
 import { getContactInfo } from '../api/contact'
 import { getMessageList, getGroupMessageList } from '../api/message'
 import { normalizeAvatarUrl } from '../utils/avatar'
@@ -19,6 +19,7 @@ interface ChatState {
   activeSessionId: string | null
   contactInfo: ContactInfo | null
   messageList: ChatMessage[]
+  pendingMessages: Map<string, ChatMessage[]>
 
   fetchUserSessionList: (ownerId: string) => Promise<void>
   fetchGroupSessionList: (ownerId: string) => Promise<void>
@@ -26,6 +27,7 @@ interface ChatState {
   sendMessage: (content: string, type: MessageType, userInfo: { uuid: string; nickname: string; avatar: string }, extra?: Partial<ChatMessageRequest>) => void
   addIncomingMessage: (msg: ChatMessage, currentUserId: string) => void
   clearChat: () => void
+  resetAll: () => void
 }
 
 function normalizeSessionAvatar(session: UserSession): UserSession {
@@ -47,56 +49,90 @@ export const useChatStore = create<ChatState>((set, get) => ({
   activeSessionId: null,
   contactInfo: null,
   messageList: [],
+  pendingMessages: new Map(),
 
   fetchUserSessionList: async (ownerId) => {
-    const res = await getUserSessionList(ownerId)
-    if (res.code === 200 && res.data) {
-      set({ userSessionList: res.data.map(normalizeSessionAvatar) })
+    try {
+      const res = await getUserSessionList(ownerId)
+      if (res.code === 200 && res.data) {
+        set({ userSessionList: res.data.map(normalizeSessionAvatar) })
+      }
+    } catch (e) {
+      console.error('fetchUserSessionList error:', e)
     }
   },
 
   fetchGroupSessionList: async (ownerId) => {
-    const res = await getGroupSessionList(ownerId)
-    if (res.code === 200 && res.data) {
-      set({ groupSessionList: res.data.map(normalizeGroupSessionAvatar) })
+    try {
+      const res = await getGroupSessionList(ownerId)
+      if (res.code === 200 && res.data) {
+        set({ groupSessionList: res.data.map(normalizeGroupSessionAvatar) })
+      }
+    } catch (e) {
+      console.error('fetchGroupSessionList error:', e)
     }
   },
 
   setActiveChat: async (contactId, userId) => {
     const generation = ++activeChatGeneration
 
-    const contactRes = await getContactInfo(contactId)
-    if (generation !== activeChatGeneration) return
-    if (contactRes.code !== 200 || !contactRes.data) return
-    const contact = contactRes.data
-    contact.contact_avatar = normalizeAvatarUrl(contact.contact_avatar)
-
-    const sessionRes = await openSession({ send_id: userId, receive_id: contactId })
-    if (generation !== activeChatGeneration) return
-    if (sessionRes.code !== 200 || !sessionRes.data) return
-    const sessionId = sessionRes.data
-
-    let messages: ChatMessage[] = []
-    if (contactId.startsWith('G')) {
-      const msgRes = await getGroupMessageList(contactId)
+    try {
+      // Check if session is allowed (e.g. not blacklisted)
+      const allowedRes = await checkOpenSessionAllowed({ send_id: userId, receive_id: contactId })
       if (generation !== activeChatGeneration) return
-      if (msgRes.code === 200 && msgRes.data) {
-        messages = msgRes.data.map(normalizeMessageAvatar)
+      if (allowedRes.code === 200 && allowedRes.data === false) {
+        showToast('无法与该用户发起会话', 'error')
+        return
       }
-    } else {
-      const msgRes = await getMessageList({ user_one_id: userId, user_two_id: contactId })
+
+      const contactRes = await getContactInfo(contactId)
       if (generation !== activeChatGeneration) return
-      if (msgRes.code === 200 && msgRes.data) {
-        messages = msgRes.data.map(normalizeMessageAvatar)
+      // Use contact info if available, otherwise create a minimal fallback
+      let contact: ContactInfo
+      if (contactRes.code === 200 && contactRes.data) {
+        contact = contactRes.data
+        contact.contact_avatar = normalizeAvatarUrl(contact.contact_avatar)
+      } else {
+        const isGroup = contactId.startsWith('G')
+        contact = {
+          contact_id: contactId,
+          contact_name: isGroup ? '群聊' : contactId,
+          contact_avatar: '',
+        }
       }
+
+      const sessionRes = await openSession({ send_id: userId, receive_id: contactId })
+      if (generation !== activeChatGeneration) return
+      if (sessionRes.code !== 200 || !sessionRes.data) return
+      const sessionId = sessionRes.data
+
+      let messages: ChatMessage[] = []
+      if (contactId.startsWith('G')) {
+        const msgRes = await getGroupMessageList(contactId)
+        if (generation !== activeChatGeneration) return
+        if (msgRes.code === 200 && msgRes.data) {
+          messages = msgRes.data.map(normalizeMessageAvatar)
+        }
+      } else {
+        const msgRes = await getMessageList({ user_one_id: userId, user_two_id: contactId })
+        if (generation !== activeChatGeneration) return
+        if (msgRes.code === 200 && msgRes.data) {
+          messages = msgRes.data.map(normalizeMessageAvatar)
+        }
+      }
+
+      // Prepend any pending messages for this chat
+      const pending = get().pendingMessages.get(contactId) || []
+
+      set({
+        activeContactId: contactId,
+        activeSessionId: sessionId,
+        contactInfo: contact,
+        messageList: [...messages, ...pending],
+      })
+    } catch (e) {
+      console.error('setActiveChat error:', e)
     }
-
-    set({
-      activeContactId: contactId,
-      activeSessionId: sessionId,
-      contactInfo: contact,
-      messageList: messages,
-    })
   },
 
   sendMessage: (content, type, userInfo, extra = {}) => {
@@ -145,19 +181,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   addIncomingMessage: (msg, currentUserId) => {
     const { activeContactId } = get()
-    if (!activeContactId) return
-
     const normalized = normalizeMessageAvatar(msg)
 
-    // Show message if it belongs to current chat (same logic as Vue version)
-    // Note: own messages (send_id === currentUserId) are already shown via optimistic update,
-    // so we only add incoming messages from others
-    const isForCurrentChat =
-      (msg.receive_id.startsWith('G') && msg.receive_id === activeContactId && msg.send_id !== currentUserId) ||
-      (msg.receive_id.startsWith('U') && msg.receive_id === currentUserId && msg.send_id === activeContactId)
+    // Skip own messages (already shown via optimistic update)
+    if (msg.send_id === currentUserId) return
+
+    // Determine which chat this message belongs to
+    const isGroup = msg.receive_id.startsWith('G')
+    const chatId = isGroup ? msg.receive_id : msg.send_id
+
+    // Check if message belongs to currently active chat
+    const isForCurrentChat = chatId === activeContactId
 
     if (isForCurrentChat) {
       set(state => ({ messageList: [...state.messageList, normalized] }))
+    } else {
+      // Store as pending for when user opens that chat
+      set(state => {
+        const pending = new Map(state.pendingMessages)
+        const existing = pending.get(chatId) || []
+        pending.set(chatId, [...existing, normalized])
+        return { pendingMessages: pending }
+      })
+      showToast(`${msg.send_name}: ${msg.content || '发来一条消息'}`, 'info')
     }
   },
 
@@ -167,6 +213,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
       activeSessionId: null,
       contactInfo: null,
       messageList: [],
+    })
+  },
+
+  resetAll: () => {
+    set({
+      userSessionList: [],
+      groupSessionList: [],
+      activeContactId: null,
+      activeSessionId: null,
+      contactInfo: null,
+      messageList: [],
+      pendingMessages: new Map(),
     })
   },
 }))

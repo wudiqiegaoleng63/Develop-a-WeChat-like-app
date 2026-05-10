@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 import type { UserInfo } from '../types/user'
 import { login as loginApi, register as registerApi, emailLogin as emailLoginApi } from '../api/auth'
-import { wsLogout } from '../api/user'
+import { wsLogout, updateUserInfo } from '../api/user'
+import { uploadAvatar } from '../api/message'
 import type { LoginRequest, RegisterRequest, EmailLoginRequest } from '../types/api'
 import { normalizeAvatarUrl } from '../utils/avatar'
 import { wsService } from '../services/websocket'
 import { WS_URL } from '../utils/constants'
 import { showToast } from '../utils/toast'
+import { useChatStore } from './useChatStore'
 
 interface AuthState {
   userInfo: UserInfo | null
@@ -14,6 +16,8 @@ interface AuthState {
   emailLogin: (data: EmailLoginRequest) => Promise<boolean>
   register: (data: RegisterRequest) => Promise<boolean>
   logout: () => void
+  updateProfile: (data: Partial<Pick<UserInfo, 'nickname' | 'gender' | 'signature' | 'birthday' | 'avatar'>>) => Promise<boolean>
+  uploadAndSetAvatar: (file: File) => Promise<string | null>
 }
 
 function normalizeUserInfo(info: UserInfo): UserInfo {
@@ -78,7 +82,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   register: async (data) => {
     const res = await registerApi(data)
-    if (res.code === 200) return true
+    if (res.code === 200 && res.data) {
+      if (res.data.status === 1) {
+        showToast('账号已被禁用', 'error')
+        return false
+      }
+      const user = normalizeUserInfo(res.data)
+      sessionStorage.setItem('userInfo', JSON.stringify(user))
+      wsService.connect(user.uuid, WS_URL)
+      set({ userInfo: user })
+      return true
+    }
     showToast(res.message || '注册失败', 'error')
     return false
   },
@@ -90,6 +104,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     wsService.disconnect()
     sessionStorage.removeItem('userInfo')
+    useChatStore.getState().resetAll()
     set({ userInfo: null })
+  },
+
+  updateProfile: async (data) => {
+    const { userInfo } = get()
+    if (!userInfo) return false
+    const res = await updateUserInfo({ uuid: userInfo.uuid, ...data })
+    if (res.code === 200) {
+      const updated = { ...userInfo, ...data }
+      sessionStorage.setItem('userInfo', JSON.stringify(updated))
+      set({ userInfo: updated })
+      return true
+    }
+    showToast(res.message || '更新失败', 'error')
+    return false
+  },
+
+  uploadAndSetAvatar: async (file) => {
+    const { userInfo } = get()
+    if (!userInfo) return null
+    const res = await uploadAvatar(file)
+    if (res.code === 200) {
+      const avatarPath = '/static/avatars/' + file.name
+      const ok = await get().updateProfile({ avatar: avatarPath })
+      return ok ? avatarPath : null
+    }
+    showToast('头像上传失败', 'error')
+    return null
   },
 }))
