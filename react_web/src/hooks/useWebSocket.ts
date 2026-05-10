@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { wsService } from '../services/websocket'
 import { useChatStore } from '../stores/useChatStore'
 import { useAuthStore } from '../stores/useAuthStore'
+import { useAVStore } from '../stores/useAVStore'
 
 export function useWebSocket() {
   const addIncomingMessage = useChatStore(state => state.addIncomingMessage)
@@ -11,8 +12,11 @@ export function useWebSocket() {
     if (!userInfo) return
 
     const unsubscribe = wsService.onMessage((message) => {
-      // Only handle non-AV messages (type 3 is AV/WebRTC signaling)
-      if (message.type !== 3) {
+      if (message.type === 3) {
+        // AV/WebRTC signaling message
+        const handleAVMessage = useAVStore.getState().handleAVMessage
+        handleAVMessage(message.av_data || '', message.send_name)
+      } else {
         addIncomingMessage(message, userInfo.uuid)
       }
     })

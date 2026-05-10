@@ -83,15 +83,15 @@ export default function UserProfileModal({ visible, onClose }: Props) {
             <div className="form-group">
               <input className="form-input" placeholder="昵称" value={nickname} onChange={e => setNickname(e.target.value)} />
             </div>
-            <div className="form-group" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>性别:</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer' }}>
+            <div className="form-group" style={{ display: 'flex', gap: 16, alignItems: 'center', color: '#333' }}>
+              <span style={{ fontSize: 14, color: '#666' }}>性别:</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer', color: '#333' }}>
                 <input type="radio" name="gender" checked={gender === 0} onChange={() => setGender(0)} /> 男
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer', color: '#333' }}>
                 <input type="radio" name="gender" checked={gender === 1} onChange={() => setGender(1)} /> 女
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer', color: '#333' }}>
                 <input type="radio" name="gender" checked={gender === -1} onChange={() => setGender(-1)} /> 未设置
               </label>
             </div>

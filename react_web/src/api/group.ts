@@ -2,6 +2,13 @@ import api from './axios'
 import type { ApiResponse } from '../types/api'
 import type { GroupInfo, GroupMember } from '../types/group'
 
+// loadMyGroup returns { group_id, group_name, avatar }
+export interface MyGroupItem {
+  group_id: string
+  group_name: string
+  avatar: string
+}
+
 export async function createGroup(data: { name: string; owner_id: string; notice?: string; add_mode?: number; avatar?: string }): Promise<ApiResponse<null>> {
   const res = await api.post('/group/createGroup', data)
   return res.data
@@ -32,7 +39,7 @@ export async function removeGroupMembers(data: { group_id: string; owner_id: str
   return res.data
 }
 
-export async function loadMyGroup(owner_id: string): Promise<ApiResponse<GroupInfo[]>> {
+export async function loadMyGroup(owner_id: string): Promise<ApiResponse<MyGroupItem[]>> {
   const res = await api.post('/group/loadMyGroup', { owner_id })
   return res.data
 }

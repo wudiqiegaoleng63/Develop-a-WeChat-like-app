@@ -114,12 +114,12 @@ export default function EditGroupInfoModal({ visible, onClose }: Props) {
             <div className="form-group">
               <textarea className="info-textarea" placeholder="群公告" value={notice} onChange={e => setNotice(e.target.value)} />
             </div>
-            <div className="form-group" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>加群方式:</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer' }}>
+            <div className="form-group" style={{ display: 'flex', gap: 16, alignItems: 'center', color: '#333' }}>
+              <span style={{ fontSize: 14, color: '#666' }}>加群方式:</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer', color: '#333' }}>
                 <input type="radio" name="editAddMode" checked={addMode === 0} onChange={() => setAddMode(0)} /> 直接加入
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer', color: '#333' }}>
                 <input type="radio" name="editAddMode" checked={addMode === 1} onChange={() => setAddMode(1)} /> 需审核
               </label>
             </div>

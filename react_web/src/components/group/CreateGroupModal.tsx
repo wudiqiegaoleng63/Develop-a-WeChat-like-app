@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useAuthStore } from '../../stores/useAuthStore'
-import { createGroup } from '../../api/group'
+import { createGroup, loadMyGroup } from '../../api/group'
+import { openSession } from '../../api/session'
 import { uploadAvatar } from '../../api/message'
 import { showToast } from '../../utils/toast'
 
@@ -68,6 +69,14 @@ export default function CreateGroupModal({ visible, onClose, onSuccess }: Props)
       console.log('[CreateGroup] Create response:', res)
       if (res.code === 200) {
         showToast('群组创建成功', 'success')
+        // createGroup doesn't return group ID, fetch my groups to find it
+        if (userInfo) {
+          const myGroupsRes = await loadMyGroup(userInfo.uuid)
+          if (myGroupsRes.code === 200 && myGroupsRes.data && myGroupsRes.data.length > 0) {
+            const newestGroup = myGroupsRes.data[0]
+            await openSession({ send_id: userInfo.uuid, receive_id: newestGroup.group_id })
+          }
+        }
         onSuccess()
         onClose()
         setName(''); setNotice(''); setAddMode(0)
@@ -106,12 +115,12 @@ export default function CreateGroupModal({ visible, onClose, onSuccess }: Props)
             <div className="form-group">
               <textarea className="info-textarea" placeholder="群公告（可选）" value={notice} onChange={e => setNotice(e.target.value)} />
             </div>
-            <div className="form-group" style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>加群方式:</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer' }}>
+            <div className="form-group" style={{ display: 'flex', gap: 16, alignItems: 'center', color: '#333' }}>
+              <span style={{ fontSize: 14, color: '#666' }}>加群方式:</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer', color: '#333' }}>
                 <input type="radio" name="addMode" checked={addMode === 0} onChange={() => setAddMode(0)} /> 直接加入
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, cursor: 'pointer', color: '#333' }}>
                 <input type="radio" name="addMode" checked={addMode === 1} onChange={() => setAddMode(1)} /> 需审核
               </label>
             </div>

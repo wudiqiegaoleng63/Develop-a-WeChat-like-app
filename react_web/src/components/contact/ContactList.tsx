@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { useContactStore } from '../../stores/useContactStore'
 import { enterGroupDirectly, checkGroupAddMode, loadMyGroup } from '../../api/group'
+import type { MyGroupItem } from '../../api/group'
 import { blackApply } from '../../api/contact'
 import { showToast } from '../../utils/toast'
 import { normalizeAvatarUrl } from '../../utils/avatar'
-import type { GroupInfo } from '../../types/group'
 
 type ContactTab = 'search' | 'requests' | 'groups' | 'join'
 
@@ -22,7 +22,8 @@ export default function ContactList() {
 
   const [activeTab, setActiveTab] = useState<ContactTab>('search')
   const [searchQuery, setSearchQuery] = useState('')
-  const [allGroups, setAllGroups] = useState<GroupInfo[]>([])
+  const [allGroups, setAllGroups] = useState<MyGroupItem[]>([])
+  const [groupAddModes, setGroupAddModes] = useState<Record<string, number>>({})
   const [loadingAllGroups, setLoadingAllGroups] = useState(false)
 
   useEffect(() => {
@@ -32,8 +33,17 @@ export default function ContactList() {
     else if (activeTab === 'groups') fetchMyGroups(userInfo.uuid)
     else if (activeTab === 'join') {
       setLoadingAllGroups(true)
-      loadMyGroup(userInfo.uuid).then(res => {
-        if (res.code === 200 && res.data) setAllGroups(res.data)
+      loadMyGroup(userInfo.uuid).then(async res => {
+        if (res.code === 200 && res.data) {
+          setAllGroups(res.data)
+          // Fetch add_mode for each group
+          const modes: Record<string, number> = {}
+          await Promise.all(res.data.map(async g => {
+            const modeRes = await checkGroupAddMode(g.group_id)
+            if (modeRes.code === 200 && modeRes.data !== undefined) modes[g.group_id] = modeRes.data
+          }))
+          setGroupAddModes(modes)
+        }
       }).finally(() => setLoadingAllGroups(false))
     }
   }, [activeTab, userInfo])
@@ -196,14 +206,14 @@ export default function ContactList() {
               <div className="contact-empty">暂无可加入的群组</div>
             )}
             {allGroups.map(g => (
-              <div key={g.uuid} className="contact-user-item">
-                <img src={normalizeAvatarUrl(g.avatar || '')} alt={g.name} className="session-avatar" />
+              <div key={g.group_id} className="contact-user-item">
+                <img src={normalizeAvatarUrl(g.avatar || '')} alt={g.group_name} className="session-avatar" />
                 <div className="contact-user-info">
-                  <span className="contact-user-name">{g.name}</span>
-                  <span className="contact-user-sub">{g.add_mode === 1 ? '需审核' : '直接加入'}</span>
+                  <span className="contact-user-name">{g.group_name}</span>
+                  <span className="contact-user-sub">{groupAddModes[g.group_id] === 1 ? '需审核' : '直接加入'}</span>
                 </div>
-                <button className="btn-action primary" onClick={() => handleJoinGroup(g.uuid)}>
-                  {g.add_mode === 1 ? '申请' : '加入'}
+                <button className="btn-action primary" onClick={() => handleJoinGroup(g.group_id)}>
+                  {groupAddModes[g.group_id] === 1 ? '申请' : '加入'}
                 </button>
               </div>
             ))}
