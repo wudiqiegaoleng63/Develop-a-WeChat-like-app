@@ -346,13 +346,16 @@ export default function ManagerPage() {
             </thead>
             <tbody>
               {groups.map(g => (
-                <tr key={g.uuid}>
-                  <td><Checkbox checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} /></td>
+                <tr key={g.uuid} style={g.is_deleted ? {opacity: 0.5} : undefined}>
+                  <td><Checkbox checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} disabled={g.is_deleted} /></td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{g.uuid}</td>
                   <td>{g.name}</td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{g.owner_id}</td>
                   <td>{g.member_cnt}</td>
-                  <td><span className={`tag ${g.status === 0 ? 'tag-success' : 'tag-danger'}`}>{g.status === 0 ? '正常' : '禁用'}</span></td>
+                  <td>
+                    {g.is_deleted && <span className="tag tag-danger" style={{marginRight:4}}>已删除</span>}
+                    {!g.is_deleted && <span className={`tag ${g.status === 0 ? 'tag-success' : 'tag-danger'}`}>{g.status === 0 ? '正常' : '禁用'}</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -378,13 +381,16 @@ export default function ManagerPage() {
             </thead>
             <tbody>
               {groups.map(g => (
-                <tr key={g.uuid}>
-                  <td><Checkbox checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} /></td>
+                <tr key={g.uuid} style={g.is_deleted ? {opacity: 0.5} : undefined}>
+                  <td><Checkbox checked={selectedGroups.includes(g.uuid)} onChange={() => toggleGroup(g.uuid)} disabled={g.is_deleted} /></td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{g.uuid}</td>
                   <td>{g.name}</td>
                   <td style={{fontFamily:'monospace',fontSize:13}}>{g.owner_id}</td>
                   <td>{g.member_cnt}</td>
-                  <td><span className={`tag ${g.status === 0 ? 'tag-success' : 'tag-danger'}`}>{g.status === 0 ? '正常' : '禁用'}</span></td>
+                  <td>
+                    {g.is_deleted && <span className="tag tag-danger" style={{marginRight:4}}>已删除</span>}
+                    {!g.is_deleted && <span className={`tag ${g.status === 0 ? 'tag-success' : 'tag-danger'}`}>{g.status === 0 ? '正常' : '禁用'}</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>

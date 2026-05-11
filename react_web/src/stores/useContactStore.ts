@@ -38,7 +38,13 @@ export const useContactStore = create<ContactState>((set, get) => ({
     try {
       const res = await getUserList(ownerId)
       if (res.code === 200 && res.data) {
-        set({ searchUsers: res.data })
+        const seen = new Set<string>()
+        const unique = res.data.filter(u => {
+          if (seen.has(u.user_id)) return false
+          seen.add(u.user_id)
+          return true
+        })
+        set({ searchUsers: unique })
       }
     } finally {
       set({ loadingSearch: false })
@@ -50,7 +56,13 @@ export const useContactStore = create<ContactState>((set, get) => ({
     try {
       const res = await getNewContactList(ownerId)
       if (res.code === 200 && res.data) {
-        set({ friendRequests: res.data })
+        const seen = new Set<string>()
+        const unique = res.data.filter(r => {
+          if (seen.has(r.contact_id)) return false
+          seen.add(r.contact_id)
+          return true
+        })
+        set({ friendRequests: unique })
       }
     } finally {
       set({ loadingRequests: false })
@@ -62,7 +74,13 @@ export const useContactStore = create<ContactState>((set, get) => ({
     try {
       const res = await loadMyJoinedGroup(ownerId)
       if (res.code === 200 && res.data) {
-        set({ myGroups: res.data })
+        const seen = new Set<string>()
+        const unique = res.data.filter(g => {
+          if (seen.has(g.group_id)) return false
+          seen.add(g.group_id)
+          return true
+        })
+        set({ myGroups: unique })
       }
     } finally {
       set({ loadingGroups: false })

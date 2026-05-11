@@ -73,6 +73,11 @@ export default function EditGroupInfoModal({ visible, onClose }: Props) {
           finalAvatar = '/static/avatars/' + avatarFile.name
         }
       }
+      // Strip backend URL prefix if present — backend expects relative path
+      if (finalAvatar.includes('/static/')) {
+        finalAvatar = '/' + finalAvatar.split('/static/')[1]
+        finalAvatar = '/static/' + finalAvatar.slice(1)
+      }
       const res = await updateGroupInfo({
         owner_id: userInfo.uuid,
         uuid: contactInfo.contact_id,

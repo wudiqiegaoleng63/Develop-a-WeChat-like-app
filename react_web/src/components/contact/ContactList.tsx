@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/useAuthStore'
+import { useChatStore } from '../../stores/useChatStore'
 import { useContactStore } from '../../stores/useContactStore'
 import { enterGroupDirectly, checkGroupAddMode, loadMyGroup } from '../../api/group'
+import { openSession } from '../../api/session'
 import type { MyGroupItem } from '../../api/group'
 import { blackApply } from '../../api/contact'
 import { showToast } from '../../utils/toast'
@@ -19,12 +21,15 @@ export default function ContactList() {
     fetchSearchUsers, fetchFriendRequests, fetchMyGroups,
     applyFriend, passRequest, refuseRequest,
   } = useContactStore()
+  const fetchGroupSessionList = useChatStore(state => state.fetchGroupSessionList)
 
   const [activeTab, setActiveTab] = useState<ContactTab>('search')
   const [searchQuery, setSearchQuery] = useState('')
   const [allGroups, setAllGroups] = useState<MyGroupItem[]>([])
   const [groupAddModes, setGroupAddModes] = useState<Record<string, number>>({})
   const [loadingAllGroups, setLoadingAllGroups] = useState(false)
+  const [joinUuid, setJoinUuid] = useState('')
+  const [joiningByUuid, setJoiningByUuid] = useState(false)
 
   useEffect(() => {
     if (!userInfo) return
@@ -80,18 +85,41 @@ export default function ContactList() {
   const handleJoinGroup = async (groupId: string) => {
     if (!userInfo) return
     const modeRes = await checkGroupAddMode(groupId)
-    if (modeRes.code !== 200) { showToast('获取群信息失败', 'error'); return }
+    if (modeRes.code !== 200) {
+      showToast(modeRes.message || '获取群信息失败，请确认群组ID是否正确', 'error')
+      return
+    }
     if (modeRes.data === 0) {
       const res = await enterGroupDirectly({ owner_id: groupId, contact_id: userInfo.uuid })
       if (res.code === 200) {
+        await openSession({ send_id: userInfo.uuid, receive_id: groupId })
         showToast('加入成功', 'success')
         fetchMyGroups(userInfo.uuid)
+        fetchGroupSessionList(userInfo.uuid)
+        navigate(`/chat/${groupId}`)
       } else {
         showToast(res.message || '加入失败', 'error')
       }
     } else {
       const ok = await applyFriend(userInfo.uuid, groupId)
-      showToast(ok ? '申请已发送' : '申请失败', ok ? 'success' : 'error')
+      showToast(ok ? '申请已发送，等待群主审核' : '申请失败', ok ? 'success' : 'error')
+    }
+  }
+
+  const handleJoinByUuid = async () => {
+    if (!userInfo) return
+    const id = joinUuid.trim()
+    if (!id) { showToast('请输入用户/群组ID', 'info'); return }
+    setJoiningByUuid(true)
+    try {
+      if (id[0] === 'G') {
+        await handleJoinGroup(id)
+      } else {
+        const ok = await applyFriend(userInfo.uuid, id)
+        showToast(ok ? '申请已发送' : '申请失败', ok ? 'success' : 'error')
+      }
+    } finally {
+      setJoiningByUuid(false)
     }
   }
 
@@ -202,6 +230,23 @@ export default function ContactList() {
 
         {activeTab === 'join' && (
           <>
+            <div className="search-box" style={{ marginBottom: 12 }}>
+              <input
+                className="search-input"
+                placeholder="输入用户ID加好友 / 群组ID加群"
+                value={joinUuid}
+                onChange={e => setJoinUuid(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleJoinByUuid()}
+              />
+              <button
+                className="btn-action primary"
+                style={{ marginLeft: 8, whiteSpace: 'nowrap' }}
+                onClick={handleJoinByUuid}
+                disabled={joiningByUuid}
+              >
+                {joiningByUuid ? '加入中...' : '加入'}
+              </button>
+            </div>
             {allGroups.length === 0 && !loading && (
               <div className="contact-empty">暂无可加入的群组</div>
             )}

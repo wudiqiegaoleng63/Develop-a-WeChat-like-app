@@ -495,13 +495,13 @@ func (g *groupInfoService) UpdateGroupInfo(req request.UpdateGroupInfoRequest) (
         }
     }
 
-    // ★5. Redis缓存清理（当前代码被注释，暂不启用）
-	// if err := myredis.DelKeysWithPattern("group_info_" + req.Uuid); err != nil {
-	// 	   zlog.Error(err.Error())
-	// 	}
-	// if err := myredis.SetKeyEx("contact_mygroup_list_"+ req.OwnerId, string(rspString), time.Minute*constants.REDIS_TIMEOUT); err != nil {
-	// 	   zlog.Error(err.Error())
-	// 	}
+    // 5. Redis缓存清理
+	if err := myredis.DelKeysWithPattern("group_info_" + req.Uuid); err != nil {
+		zlog.Error(err.Error())
+	}
+	if err := myredis.DelKeysWithPattern("contact_mygroup_list_" + req.OwnerId); err != nil {
+		zlog.Error(err.Error())
+	}
 
     return "更新成功", 0
 }
@@ -600,11 +600,13 @@ func (g *groupInfoService) RemoveGroupMembers(req request.RemoveGroupMembersRequ
         }
 
         // 5. 从members切片中移除该UUID
-        for i, member := range members {
-            if member == uuid {
-                members = append(members[:i], members[i+1:]...)
+        filtered := make([]string, 0, len(members))
+        for _, member := range members {
+            if member != uuid {
+                filtered = append(filtered, member)
             }
         }
+        members = filtered
         group.MemberCnt -= 1  // 减少成员计数
 
         // ★6. 删除会话记录（Session表）
@@ -737,7 +739,15 @@ func (g *groupInfoService) DeleteGroups(uuidList []string) (string, int) {
     if err := myredis.DelKeysWithPrefix("group_session_list"); err != nil {
         zlog.Error(err.Error())
     }
-    if err := myredis.DelKeysWithPrefix("group_session_list"); err != nil {
+    for _, uuid := range uuidList {
+        if err := myredis.DelKeysWithPattern("group_info_" + uuid); err != nil {
+            zlog.Error(err.Error())
+        }
+    }
+    if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
+        zlog.Error(err.Error())
+    }
+    if err := myredis.DelKeysWithPrefix("session_list"); err != nil {
         zlog.Error(err.Error())
     }
     return "解散/删除群聊成功", 0

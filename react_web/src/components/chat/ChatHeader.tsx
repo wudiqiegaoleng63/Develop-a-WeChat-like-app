@@ -5,8 +5,10 @@ import { useAuthStore } from '../../stores/useAuthStore'
 import { deleteSession } from '../../api/session'
 import { deleteContact, blackContact, cancelBlackContact } from '../../api/contact'
 import { getCurContactListInChatRoom } from '../../api/chatroom'
+import { getGroupMemberList } from '../../api/group'
 import { leaveGroup, dismissGroup } from '../../api/group'
 import { showToast } from '../../utils/toast'
+import { normalizeAvatarUrl } from '../../utils/avatar'
 import AVCallModal from './AVCallModal'
 import ContactInfoModal from './ContactInfoModal'
 import EditGroupInfoModal from '../group/EditGroupInfoModal'
@@ -26,6 +28,7 @@ export default function ChatHeader() {
   const [removeMembersVisible, setRemoveMembersVisible] = useState(false)
   const [joinRequestsVisible, setJoinRequestsVisible] = useState(false)
   const [onlineMembersVisible, setOnlineMembersVisible] = useState(false)
+  const [groupMembersVisible, setGroupMembersVisible] = useState(false)
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -145,6 +148,7 @@ export default function ChatHeader() {
   const menuItems = isGroup
     ? [
         { icon: '👥', label: '群聊信息', onClick: () => setInfoModalVisible(true) },
+        { icon: '📋', label: '群成员', onClick: () => setGroupMembersVisible(true) },
         { icon: '🟢', label: '在线成员', onClick: () => setOnlineMembersVisible(true) },
         ...(isOwner
           ? [
@@ -204,6 +208,7 @@ export default function ChatHeader() {
       <ContactInfoModal visible={infoModalVisible} onClose={() => setInfoModalVisible(false)} contactInfo={contactInfo} isGroup={isGroup} />
       {isGroup && (
         <>
+          <GroupMembersModal visible={groupMembersVisible} onClose={() => setGroupMembersVisible(false)} groupId={contactInfo.contact_id} ownerId={contactInfo.contact_owner_id || ''} currentUserId={userInfo.uuid} />
           <OnlineMembersModal visible={onlineMembersVisible} onClose={() => setOnlineMembersVisible(false)} groupId={contactInfo.contact_id} userId={userInfo.uuid} />
           {isOwner && (
             <>
@@ -251,6 +256,59 @@ function OnlineMembersModal({ visible, onClose, groupId, userId }: { visible: bo
             <div key={id} className="contact-user-item" style={{ padding: '6px 0' }}>
               <span className="status-indicator online" />
               <span style={{ marginLeft: 8, fontFamily: 'monospace', fontSize: 13 }}>{id}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GroupMembersModal({ visible, onClose, groupId, ownerId, currentUserId }: { visible: boolean; onClose: () => void; groupId: string; ownerId: string; currentUserId: string }) {
+  const [members, setMembers] = useState<{ user_id: string; nickname: string; avatar: string }[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (visible) {
+      setLoading(true)
+      getGroupMemberList(groupId).then(res => {
+        if (res.code === 200 && res.data) setMembers(res.data)
+      }).finally(() => setLoading(false))
+    }
+  }, [visible, groupId])
+
+  if (!visible) return null
+
+  const owner = members.find(m => m.user_id === ownerId)
+
+  return (
+    <div className="info-modal-overlay" onClick={onClose}>
+      <div className="info-modal" onClick={e => e.stopPropagation()} style={{ width: 380 }}>
+        <div className="info-modal-header">
+          <h3>群成员 ({members.length})</h3>
+          <button className="info-close-btn" onClick={onClose}>×</button>
+        </div>
+        <div className="info-modal-body" style={{ maxHeight: 400, overflowY: 'auto' }}>
+          {loading && <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-secondary)' }}>加载中...</div>}
+          {!loading && members.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-secondary)' }}>暂无成员</div>
+          )}
+          {owner && (
+            <div className="contact-user-item" style={{ padding: '8px 0' }}>
+              <img src={normalizeAvatarUrl(owner.avatar)} alt={owner.nickname} className="session-avatar" style={{ width: 36, height: 36 }} />
+              <div className="contact-user-info">
+                <span className="contact-user-name">{owner.nickname}</span>
+                <span style={{ fontSize: 11, color: 'var(--primary)', marginLeft: 6 }}>群主</span>
+              </div>
+            </div>
+          )}
+          {members.filter(m => m.user_id !== ownerId).map(m => (
+            <div key={m.user_id} className="contact-user-item" style={{ padding: '8px 0' }}>
+              <img src={normalizeAvatarUrl(m.avatar)} alt={m.nickname} className="session-avatar" style={{ width: 36, height: 36 }} />
+              <div className="contact-user-info">
+                <span className="contact-user-name">{m.nickname}</span>
+                {m.user_id === currentUserId && <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>我</span>}
+              </div>
             </div>
           ))}
         </div>

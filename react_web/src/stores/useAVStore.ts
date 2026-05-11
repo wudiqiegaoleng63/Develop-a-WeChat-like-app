@@ -60,8 +60,14 @@ export const useAVStore = create<AVState>((set, get) => ({
   }),
 
   handleAVMessage: (avDataStr, sendName) => {
+    console.log('[AV] handleAVMessage called, avDataStr:', avDataStr, 'sendName:', sendName)
     try {
+      if (!avDataStr) {
+        console.warn('[AV] Empty avDataStr, skipping')
+        return
+      }
       const avData = JSON.parse(avDataStr)
+      console.log('[AV] Parsed avData:', avData)
 
       if (avData.messageId === 'CURRENT_PEERS') {
         console.log('[AV] CURRENT_PEERS:', avData.messageData?.curContactList)
@@ -72,7 +78,7 @@ export const useAVStore = create<AVState>((set, get) => ({
         set({ callStatus: 'peer_hangup' })
       } else if (avData.messageId === 'PROXY') {
         if (avData.type === 'start_call') {
-          console.log('[AV] start_call from', sendName)
+          console.log('[AV] start_call from', sendName, '→ setting ableToReceiveOrReject=true')
           set({ ableToReceiveOrReject: true, ableToStartCall: false })
           showToast(`收到来自${sendName}的通话请求，请前往聊天室查看`, 'info')
         } else if (avData.type === 'receive_call') {
@@ -101,6 +107,7 @@ export const useAVStore = create<AVState>((set, get) => ({
   },
 
   sendAVMessage: (sessionId, userInfo, contactId, avPayload) => {
+    console.log('[AV] sendAVMessage', { sessionId, contactId, avPayload })
     const request: ChatMessageRequest = {
       session_id: sessionId,
       type: MessageType.AV,

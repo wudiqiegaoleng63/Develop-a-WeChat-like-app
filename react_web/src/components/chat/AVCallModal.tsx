@@ -191,13 +191,11 @@ export default function AVCallModal({ visible, onClose }: AVCallModalProps) {
       setRemoteSdp(null)
     } else if (callStatus === 'rejected') {
       showToast('对方拒绝通话', 'error')
-      closeLocalMediaStream()
-      closeRtcPeerConnection()
+      cleanup()
       resetAllState()
     } else if (callStatus === 'peer_hangup') {
       showToast('对方已挂断', 'info')
-      closeLocalMediaStream()
-      closeRtcPeerConnection()
+      cleanup()
       resetAllState()
     }
   }, [callStatus, visible, contactInfo, userInfo])
@@ -270,9 +268,7 @@ export default function AVCallModal({ visible, onClose }: AVCallModalProps) {
       messageId: 'PEER_LEAVE',
     })
 
-    closeLocalMediaStream()
-    closeRtcPeerConnection()
-    remoteStreamRef.current = null
+    cleanup()
     resetAllState()
   }
 
@@ -288,6 +284,8 @@ export default function AVCallModal({ visible, onClose }: AVCallModalProps) {
 
   // Early return AFTER all hooks
   if (!visible || !contactInfo || !userInfo) return null
+
+  console.log('[AVModal] Rendering, ableToReceiveOrReject:', ableToReceiveOrReject, 'ableToStartCall:', ableToStartCall, 'callStatus:', callStatus)
 
   const isGroup = contactInfo.contact_id.startsWith('G')
 

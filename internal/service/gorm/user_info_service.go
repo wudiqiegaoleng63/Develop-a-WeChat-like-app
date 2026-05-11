@@ -386,11 +386,10 @@ func (u *userInfoService) AbleUsers(uuidList []string) (string, int) {
 			return constants.SYSTEM_ERROR, -1
 		}
 	}
-	// ★Redis缓存清理（当前代码被注释，暂不启用）
-	// 删除所有"contact_user_list"开头的key
-	//if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
-	//	zlog.Error(err.Error())
-	//}
+	// Redis缓存清理
+	if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
+		zlog.Error(err.Error())
+	}
 	return "启用用户成功", 0
 }
 
@@ -426,10 +425,10 @@ func (u *userInfoService) DisableUsers(uuidList []string) (string, int) {
 			}
 		}
 	}
-	// ★Redis缓存清理（当前代码被注释，暂不启用）
-	//if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
-	//	zlog.Error(err.Error())
-	//}
+	// Redis缓存清理
+	if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
+		zlog.Error(err.Error())
+	}
 	return "禁用用户成功", 0
 }
 
@@ -513,10 +512,10 @@ func (u *userInfoService) DeleteUsers(uuidList []string) (string, int) {
 			}
 		}
 	}
-	// ★Redis缓存清理（当前代码被注释，暂不启用）
-	//if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
-	//	zlog.Error(err.Error())
-	//}
+	// Redis缓存清理
+	if err := myredis.DelKeysWithPrefix("contact_user_list"); err != nil {
+		zlog.Error(err.Error())
+	}
+
 	return "删除用户成功", 0
 }
-
