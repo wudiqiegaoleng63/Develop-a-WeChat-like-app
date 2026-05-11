@@ -79,7 +79,7 @@ func sendEmail(toEmail string, code string) error {
 	e := email.NewEmail()
 	e.From = conf.EmailConfig.FromName + " <" + conf.EmailConfig.SmtpUsername + ">"
 	e.To = []string{toEmail}
-	e.Subject = "【KamaChat】邮箱验证码"
+	e.Subject = "【GoChat】邮箱验证码"
 	e.HTML = []byte(buildEmailHTML(code))
 
 	// ★端口465是SSL端口，需要用SendWithTLS

@@ -73,8 +73,8 @@ func (s *Server) Start() {
 				s.mutex.Lock()
 				s.Clients[client.Uuid] = client
 				s.mutex.Unlock()
-				zlog.Debug(fmt.Sprintf("欢迎来到kama聊天服务器，亲爱的用户%s\n", client.Uuid))
-				err := client.Conn.WriteMessage(websocket.TextMessage, []byte("欢迎来到kama聊天服务器"))
+				zlog.Debug(fmt.Sprintf("欢迎来到GoChat聊天服务器，亲爱的用户%s\n", client.Uuid))
+				err := client.Conn.WriteMessage(websocket.TextMessage, []byte("欢迎来到GoChat聊天服务器"))
 				if err != nil {
 					zlog.Error(err.Error())
 				}

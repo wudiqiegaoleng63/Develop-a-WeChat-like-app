@@ -90,7 +90,7 @@ export default function RegisterPage() {
       <div className="auth-card">
         <div className="auth-logo">
           <div className="icon">💬</div>
-          <h1>创建账号</h1>
+          <h1>GoChat</h1>
           <p>加入我们，开始聊天</p>
         </div>
 

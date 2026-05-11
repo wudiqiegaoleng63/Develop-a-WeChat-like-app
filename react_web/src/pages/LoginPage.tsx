@@ -85,7 +85,7 @@ export default function LoginPage() {
       <div className="auth-card">
         <div className="auth-logo">
           <div className="icon">💬</div>
-          <h1>即时通讯</h1>
+          <h1>GoChat</h1>
           <p>随时随地，畅快沟通</p>
         </div>
 
