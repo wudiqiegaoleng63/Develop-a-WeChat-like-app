@@ -6,3 +6,5 @@ configs/config_local.toml
 CLAUDE.md
 
 react_web/node_modules/
+
+docs/
