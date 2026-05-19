@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import type { ChatMessage } from '../../types/message'
 import { MessageType } from '../../types/message'
 import { useAuthStore } from '../../stores/useAuthStore'
@@ -6,7 +6,12 @@ import { BACKEND_URL } from '../../utils/constants'
 
 async function downloadFile(url: string, fileName: string) {
   try {
-    const rsp = await fetch(url.startsWith('http') ? url : BACKEND_URL + url)
+    const token = localStorage.getItem('token')
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    const rsp = await fetch(url.startsWith('http') ? url : BACKEND_URL + url, { headers })
     const blob = await rsp.blob()
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
@@ -27,6 +32,29 @@ interface Props {
 export default function MessageBubble({ message }: Props) {
   const userInfo = useAuthStore(state => state.userInfo)
   const isSent = message.send_id === userInfo?.uuid
+  const [imageSrc, setImageSrc] = useState<string | undefined>(undefined)
+
+  // 带认证加载图片
+  useEffect(() => {
+    if (message.type === MessageType.FILE && message.file_type?.startsWith('image/') && message.url) {
+      const token = localStorage.getItem('token')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      const url = message.url.startsWith('http') ? message.url : BACKEND_URL + message.url
+      fetch(url, { headers })
+        .then(rsp => rsp.blob())
+        .then(blob => {
+          const objectUrl = URL.createObjectURL(blob)
+          setImageSrc(objectUrl)
+          return () => URL.revokeObjectURL(objectUrl)
+        })
+        .catch(() => {
+          setImageSrc(url) // fallback to direct URL
+        })
+    }
+  }, [message.url, message.type, message.file_type])
 
   const renderContent = () => {
     switch (message.type) {
@@ -34,7 +62,7 @@ export default function MessageBubble({ message }: Props) {
         if (message.file_type?.startsWith('image/') && message.url) {
           return (
             <div className="message-bubble" style={{ padding: 4, background: 'transparent' }}>
-              <img src={message.url} alt={message.file_name || '图片'} className="chat-image" />
+              {imageSrc && <img src={imageSrc} alt={message.file_name || '图片'} className="chat-image" />}
             </div>
           )
         }

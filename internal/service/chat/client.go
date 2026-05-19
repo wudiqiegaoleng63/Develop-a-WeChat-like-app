@@ -63,6 +63,12 @@ func (c *Client) Read() {
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
 			zlog.Error(err.Error())
 		}
+		// 强制使用认证后的UUID作为发送者，防止伪造身份
+		message.SendId = c.Uuid
+		// 重新序列化，确保使用覆盖后的send_id
+		if overridden, err := json.Marshal(message); err == nil {
+			jsonMessage = overridden
+		}
 		log.Println("接受消息为：", jsonMessage)
 
 		if messageMode == "channel" {

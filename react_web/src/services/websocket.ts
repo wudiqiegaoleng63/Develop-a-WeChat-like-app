@@ -7,18 +7,18 @@ class WebSocketService {
   private messageHandlers: Set<MessageHandler> = new Set()
   private reconnectAttempts = 0
   private maxReconnectAttempts = 10
-  private clientId: string = ''
+  private token: string = ''
   private wsBaseUrl: string = ''
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private isConnecting = false
   private intentionalClose = false
 
-  connect(clientId: string, wsBaseUrl: string): void {
+  connect(token: string, wsBaseUrl: string): void {
     // Prevent duplicate connections
-    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN && this.clientId === clientId)) {
+    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN && this.token === token)) {
       return
     }
-    this.clientId = clientId
+    this.token = token
     this.wsBaseUrl = wsBaseUrl
     this.reconnectAttempts = 0
     this.intentionalClose = false
@@ -35,8 +35,8 @@ class WebSocketService {
       this.ws = null
     }
 
-    const url = `${this.wsBaseUrl}/user/wsLogin?client_id=${this.clientId}`
-    console.log('[WS] Connecting to:', url)
+    const url = `${this.wsBaseUrl}/user/wsLogin?token=${this.token}`
+    console.log('[WS] Connecting...')
 
     try {
       this.ws = new WebSocket(url)
@@ -82,9 +82,26 @@ class WebSocketService {
     }
   }
 
+  private isTokenExpired(): boolean {
+    if (!this.token) return true
+    try {
+      const payload = JSON.parse(atob(this.token.split('.')[1]))
+      return payload.exp * 1000 < Date.now()
+    } catch {
+      return true
+    }
+  }
+
   private attemptReconnect(): void {
     if (this.reconnectTimer) return
     if (this.intentionalClose) return
+    if (this.isTokenExpired()) {
+      console.log('[WS] Token expired, redirecting to login')
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      window.location.href = '/login'
+      return
+    }
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.log('[WS] Max reconnect attempts reached')
       return

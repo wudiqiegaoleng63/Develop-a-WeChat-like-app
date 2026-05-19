@@ -31,3 +31,30 @@ func JsonBack(c *gin.Context, message string, ret int, data interface{}) {
 		})
 	}
 }
+
+// GetTokenUuid 从JWT中间件注入的上下文中获取当前用户uuid
+func GetTokenUuid(c *gin.Context) string {
+	uuid, exists := c.Get("uuid")
+	if !exists {
+		return ""
+	}
+	s, ok := uuid.(string)
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+// CheckOwner 校验请求中的ownerId是否与token中的uuid一致
+// 返回true表示一致（通过），false表示不一致（拒绝）
+func CheckOwner(c *gin.Context, ownerId string) bool {
+	tokenUuid := GetTokenUuid(c)
+	if tokenUuid != ownerId {
+		c.JSON(http.StatusOK, gin.H{
+			"code":    403,
+			"message": "无权操作他人数据",
+		})
+		return false
+	}
+	return true
+}

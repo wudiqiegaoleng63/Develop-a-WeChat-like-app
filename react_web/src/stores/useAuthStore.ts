@@ -27,17 +27,19 @@ function normalizeUserInfo(info: UserInfo): UserInfo {
   }
 }
 
-// Initialize from sessionStorage (like Vue version)
+// 从localStorage恢复登录状态
 function getInitialUserInfo(): UserInfo | null {
-  const stored = sessionStorage.getItem('userInfo')
-  if (stored) {
+  const stored = localStorage.getItem('userInfo')
+  const token = localStorage.getItem('token')
+  if (stored && token) {
     try {
       const user = JSON.parse(stored) as UserInfo
-      // Reconnect WebSocket
-      wsService.connect(user.uuid, WS_URL)
+      // 使用token重连WebSocket
+      wsService.connect(token, WS_URL)
       return user
     } catch {
-      sessionStorage.removeItem('userInfo')
+      localStorage.removeItem('userInfo')
+      localStorage.removeItem('token')
     }
   }
   return null
@@ -54,8 +56,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false
       }
       const user = normalizeUserInfo(res.data)
-      sessionStorage.setItem('userInfo', JSON.stringify(user))
-      wsService.connect(user.uuid, WS_URL)
+      const token = res.data.token || ''
+      localStorage.setItem('userInfo', JSON.stringify(user))
+      localStorage.setItem('token', token)
+      wsService.connect(token, WS_URL)
       set({ userInfo: user })
       return true
     }
@@ -71,8 +75,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false
       }
       const user = normalizeUserInfo(res.data)
-      sessionStorage.setItem('userInfo', JSON.stringify(user))
-      wsService.connect(user.uuid, WS_URL)
+      const token = res.data.token || ''
+      localStorage.setItem('userInfo', JSON.stringify(user))
+      localStorage.setItem('token', token)
+      wsService.connect(token, WS_URL)
       set({ userInfo: user })
       return true
     }
@@ -88,8 +94,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return false
       }
       const user = normalizeUserInfo(res.data)
-      sessionStorage.setItem('userInfo', JSON.stringify(user))
-      wsService.connect(user.uuid, WS_URL)
+      const token = res.data.token || ''
+      localStorage.setItem('userInfo', JSON.stringify(user))
+      localStorage.setItem('token', token)
+      wsService.connect(token, WS_URL)
       set({ userInfo: user })
       return true
     }
@@ -103,7 +111,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       wsLogout(userInfo.uuid).catch(() => {})
     }
     wsService.disconnect()
-    sessionStorage.removeItem('userInfo')
+    localStorage.removeItem('userInfo')
+    localStorage.removeItem('token')
     useChatStore.getState().resetAll()
     set({ userInfo: null })
   },
@@ -114,7 +123,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const res = await updateUserInfo({ uuid: userInfo.uuid, ...data })
     if (res.code === 200) {
       const updated = { ...userInfo, ...data }
-      sessionStorage.setItem('userInfo', JSON.stringify(updated))
+      localStorage.setItem('userInfo', JSON.stringify(updated))
       set({ userInfo: updated })
       return true
     }

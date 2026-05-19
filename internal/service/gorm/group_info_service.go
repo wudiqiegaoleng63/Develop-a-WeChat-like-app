@@ -371,8 +371,30 @@ func (g *groupInfoService) LeaveGroup(userId string, groupId string) (string, in
     return "退群成功", 0
 }
 
+
+// checkGroupOwner 校验用户是否为群主
+func (g *groupInfoService) checkGroupOwner(ownerId, groupId string) (string, int) {
+	var group model.GroupInfo
+	if res := dao.GormDB.First(&group, "uuid = ?", groupId); res.Error != nil {
+		if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+			return "群聊不存在", -2
+		}
+		zlog.Error(res.Error.Error())
+		return constants.SYSTEM_ERROR, -1
+	}
+	if group.OwnerId != ownerId {
+		return "只有群主才能执行此操作", -2
+	}
+	return "", 0
+}
+
 // DismissGroup 解散群聊
 func (g *groupInfoService) DismissGroup(ownerId, groupId string) (string, int) {
+	// 校验群主身份
+	if msg, ret := g.checkGroupOwner(ownerId, groupId); ret != 0 {
+		return msg, ret
+	}
+
     // 初始化软删除时间戳
     var deletedAt gorm.DeletedAt
     deletedAt.Time = time.Now()
@@ -459,7 +481,12 @@ func (g *groupInfoService) UpdateGroupInfo(req request.UpdateGroupInfoRequest) (
         return constants.SYSTEM_ERROR, -1
     }
 
-    // 2. 选择性更新群组字段
+    // 2. 校验群主身份
+    if group.OwnerId != req.OwnerId {
+        return "只有群主才能执行此操作", -2
+    }
+
+    // 3. 选择性更新群组字段
     if req.Name != "" {
         group.Name = req.Name
     }
@@ -572,6 +599,11 @@ func (g *groupInfoService)GetGroupMemberList(groupId string) (string, []respond.
 
 // RemoveGroupMembers 移除群聊成员
 func (g *groupInfoService) RemoveGroupMembers(req request.RemoveGroupMembersRequest) (string, int) {
+	// 校验群主身份
+	if msg, ret := g.checkGroupOwner(req.OwnerId, req.GroupId); ret != 0 {
+		return msg, ret
+	}
+
 	// 1. 查询群组信息
     var group model.GroupInfo
     if res := dao.GormDB.First(&group, "uuid = ?", req.GroupId); res.Error != nil {

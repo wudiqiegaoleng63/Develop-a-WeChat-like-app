@@ -16,6 +16,7 @@ type LoginRespond struct {
     IsAdmin   int8   `json:"isAdmin"`
     Status    int8   `json:"status"`      // ★用户状态
     CreatedAt string `json:"createdAt"`   // ★创建时间
+    Token     string `json:"token"`       // JWT token
 }
 
 // ============================================================
@@ -33,6 +34,7 @@ type RegisterRespond struct {
     IsAdmin   int8   `json:"isAdmin"`
     Status    int8   `json:"status"`
     CreatedAt string `json:"createdAt"`
+    Token     string `json:"token"`       // JWT token
 }
 
 // ============================================================

@@ -10,6 +10,7 @@ export interface UserInfo {
   signature?: string   // 个性签名
   birthday?: string    // 生日
   createdAt?: string   // 注册时间
+  token?: string       // JWT token
 }
 
 // Full contact info from getContactInfo API

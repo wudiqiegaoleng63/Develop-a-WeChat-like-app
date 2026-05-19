@@ -8,7 +8,7 @@ import { showToast } from '../utils/toast'
 import type { UserInfo } from '../types/user'
 import type { GroupInfo } from '../types/group'
 
-function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function Checkbox({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
   return (
     <span
       onClick={(e) => { e.stopPropagation(); onChange() }}

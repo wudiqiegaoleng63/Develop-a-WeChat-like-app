@@ -57,6 +57,12 @@ type EmailConfig struct {
     FromName     string `toml:"fromName"`     // 发件人名称
 }
 
+// JwtConfig - JWT配置
+type JwtConfig struct {
+	Secret      string `toml:"secret"`      // JWT签名密钥
+	ExpireHours int    `toml:"expireHours"` // Token过期时间（小时）
+}
+
 // KafkaConfig - Kafka配置
 type KafkaConfig struct {
     MessageMode string        `toml:"messageMode"` // channel 或 kafka
@@ -76,7 +82,8 @@ type Config struct {
 	StaticSrcConfig `toml:"staticSrcConfig"`
 	RedisConfig     `toml:"redisConfig"`
 	EmailConfig    `toml:"emailConfig"`
-	KafkaConfig     `toml:"kafkaConfig"` 
+	KafkaConfig     `toml:"kafkaConfig"`
+	JwtConfig       `toml:"jwtConfig"`
 }
 
 
@@ -91,6 +98,10 @@ func LoadConfig() error {
 	if err != nil {
 		log.Fatal("配置加载失败:", err.Error())
 		return err
+	}
+	// 校验JWT密钥不能是默认占位符
+	if config.JwtConfig.Secret == "gochat-jwt-secret-key-change-in-production" {
+		log.Fatal("JWT secret 不能使用默认值，请在 config_local.toml 中修改 jwtConfig.secret")
 	}
 	return nil
 }

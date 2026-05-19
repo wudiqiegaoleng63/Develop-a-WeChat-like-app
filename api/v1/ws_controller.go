@@ -12,36 +12,36 @@ import (
 
 // WsLogin WebSocket登录
 func WsLogin(c *gin.Context) {
-	clientId := c.Query("client_id")
-	if clientId == "" {
-		zlog.Error("clientId获取失败")
+	// 从JWT中间件注入的上下文中获取uuid
+	uuid, exists := c.Get("uuid")
+	if !exists {
+		zlog.Error("uuid获取失败")
 		c.JSON(http.StatusOK, gin.H{
-			"code": 400,
-			"message": "clientId获取失败",
+			"code":    401,
+			"message": "未认证",
 		})
 		return
 	}
+	clientId := uuid.(string)
 
 	chat.NewClientInit(c, clientId)
 }
 
 // WsLogout WebSocket登出
-// 路由: POST /user/wsLogout
 func WsLogout(c *gin.Context) {
-    // 1. 绑定请求参数
-    var req request.WsLogoutRequest
-    if err := c.BindJSON(&req); err != nil {
-        zlog.Error(err.Error())
-        c.JSON(http.StatusOK, gin.H{
-            "code":    500,
-            "message": constants.SYSTEM_ERROR,
-        })
-        return
-    }
-
-    // 2. 调用Chat服务层关闭WebSocket连接
-    message, ret := chat.ClientLogout(req.OwnerId)
-
-    // 3. 返回响应
-    JsonBack(c, message, ret, nil)
+	var req request.WsLogoutRequest
+	if err := c.BindJSON(&req); err != nil {
+		zlog.Error(err.Error())
+		c.JSON(http.StatusOK, gin.H{
+			"code":    500,
+			"message": constants.SYSTEM_ERROR,
+		})
+		return
+	}
+	// 校验权限：只能登出自己
+	if !CheckOwner(c, req.OwnerId) {
+		return
+	}
+	message, ret := chat.ClientLogout(req.OwnerId)
+	JsonBack(c, message, ret, nil)
 }

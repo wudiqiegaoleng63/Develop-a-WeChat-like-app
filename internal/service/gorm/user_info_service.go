@@ -10,6 +10,7 @@ import (
 	"kama-chat-server/internal/model"
 	"kama-chat-server/internal/service/email"
 	myredis "kama-chat-server/internal/service/redis"
+	myjwt "kama-chat-server/pkg/jwt"
 	"kama-chat-server/pkg/constants"
 	"kama-chat-server/pkg/enum/user_info/user_status_enum"
 	"kama-chat-server/pkg/util/random"
@@ -85,6 +86,13 @@ func (u *userInfoService) Login(loginReq request.LoginRequest) (string, *respond
 	year, month, day := user.CreatedAt.Date()
 	loginRsp.CreatedAt = fmt.Sprintf("%d.%d.%d", year, month, day)
 
+	// 生成JWT token
+	token, err := myjwt.GenerateToken(user.Uuid, user.IsAdmin)
+	if err != nil {
+		zlog.Error("生成token失败: " + err.Error())
+		return constants.SYSTEM_ERROR, nil, -1
+	}
+	loginRsp.Token = token
 	return "登录成功", loginRsp, 0
 }
 
@@ -145,6 +153,13 @@ func (u *userInfoService) Register(registerReq request.RegisterRequest) (string,
 	year, month, day := newUser.CreatedAt.Date()
 	registerRsp.CreatedAt = fmt.Sprintf("%d.%d.%d", year, month, day)
 
+	// 生成JWT token
+	token, err := myjwt.GenerateToken(newUser.Uuid, newUser.IsAdmin)
+	if err != nil {
+		zlog.Error("生成token失败: " + err.Error())
+		return constants.SYSTEM_ERROR, nil, -1
+	}
+	registerRsp.Token = token
 	return "注册成功", registerRsp, 0
 }
 
@@ -190,6 +205,14 @@ func (u *userInfoService) EmailLogin(req request.EmailLoginRequest) (string, *re
 
 	year, month, day := user.CreatedAt.Date()
 	loginRsp.CreatedAt = fmt.Sprintf("%d.%d.%d", year, month, day)
+
+	// 生成JWT token
+	token, err := myjwt.GenerateToken(user.Uuid, user.IsAdmin)
+	if err != nil {
+		zlog.Error("生成token失败: " + err.Error())
+		return constants.SYSTEM_ERROR, nil, -1
+	}
+	loginRsp.Token = token
 
 	return "登录成功", loginRsp, 0
 }
