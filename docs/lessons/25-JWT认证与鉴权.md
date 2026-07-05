@@ -115,7 +115,7 @@ HMACSHA256(base64UrlEncode(header) + "." + base64UrlEncode(payload), secret)
 | ⑥ | DTO | `internal/dto/respond/user_info_respond.go` | 响应结构体中的Token字段 |
 | ⑦ | Controller | `api/v1/controller.go` | GetTokenUuid、CheckOwner辅助函数 |
 | ⑧ | 路由 | `internal/https_server/https_server.go` | 公开路由 vs 认证路由 vs 管理员路由 |
-| ⑨ | 前端 | `react_web/src/api/axios.ts` | 请求拦截器附加token + 响应拦截器处理401/403 |
+| ⑨ | 前端 | `frontend/src/api/axios.ts` | 请求拦截器附加token + 响应拦截器处理401/403 |
 
 ---
 
@@ -758,7 +758,7 @@ func registerRoutes() {
 
 ## 十一、前端：Axios拦截器
 
-**文件位置:** `react_web/src/api/axios.ts`
+**文件位置:** `frontend/src/api/axios.ts`
 
 ### 11.1 请求拦截器：自动附加token
 

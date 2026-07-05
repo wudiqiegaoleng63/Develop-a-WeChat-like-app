@@ -57,8 +57,9 @@ kama-chat-server/
 ├── configs/                  # 配置文件
 ├── static/                   # 静态资源（头像/文件）
 ├── logs/                     # 日志文件
-├── react_web/                # React 前端项目
-└── a teacher/                # 教学文档（22 篇）
+├── frontend/                # React 前端项目
+├── lessons/                  # 教学文档（26 篇，架构→JWT 全链路）
+└── build-log/                # 仿微信 Go 从零开发叙事文档
 ```
 
 ## 三层架构
@@ -196,7 +197,7 @@ go build -o gochat-server cmd/kama-chat-server/main.go
 ### 5. 启动前端
 
 ```bash
-cd react_web
+cd frontend
 
 # 安装依赖
 npm install
@@ -209,7 +210,7 @@ npm run dev
 
 #### 前端配置
 
-编辑 `react_web/src/utils/constants.ts`，修改后端地址：
+编辑 `frontend/src/utils/constants.ts`，修改后端地址：
 
 ```typescript
 export const BACKEND_URL = 'http://127.0.0.1:8000'  // 后端地址
@@ -219,11 +220,11 @@ export const WS_URL = 'ws://127.0.0.1:8000'         // WebSocket 地址
 #### 生产构建
 
 ```bash
-cd react_web
+cd frontend
 npm run build
 ```
 
-构建产物在 `react_web/dist/`，后端已配置静态文件服务，可直接通过 `http://127.0.0.1:8000` 访问前端页面。
+构建产物在 `frontend/dist/`，后端已配置静态文件服务，可直接通过 `http://127.0.0.1:8000` 访问前端页面。
 
 ### 6. 验证部署
 

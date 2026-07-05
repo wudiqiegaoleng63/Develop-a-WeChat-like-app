@@ -2,10 +2,10 @@
 *.exe
 /bin/
 /dist/
-react_web/dist/
+frontend/dist/
 
 # ===== 依赖 =====
-react_web/node_modules/
+frontend/node_modules/
 vendor/
 
 # ===== 本地配置（含密钥）=====

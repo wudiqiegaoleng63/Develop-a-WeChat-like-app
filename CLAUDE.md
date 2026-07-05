@@ -19,13 +19,13 @@ go run cmd/kama-chat-server/main.go
 go test ./...
 
 # Frontend: Install dependencies
-cd react_web && npm install
+cd frontend && npm install
 
 # Frontend: Dev server (port 5173)
-cd react_web && npm run dev
+cd frontend && npm run dev
 
 # Frontend: Production build
-cd react_web && npm run build
+cd frontend && npm run build
 ```
 
 ## Backend Architecture: Three-Layer Pattern
@@ -81,7 +81,7 @@ import (
 - **UI Library**: Ant Design (Modal.confirm, ConfigProvider)
 - **WebSocket**: Native WebSocket with reconnection logic
 
-### Directory Structure (`react_web/src/`)
+### Directory Structure (`frontend/src/`)
 
 | Directory | Purpose |
 |-----------|---------|
@@ -161,16 +161,16 @@ Email uses QQ SMTP (smtp.qq.com:465 with TLS), not SMS. Requires 16-char authori
 - Backend routes: `internal/https_server/https_server.go` - `registerRoutes()`
 - JsonBack: `api/v1/controller.go` (same package as controllers, call directly)
 - Verification code Redis key: `email_code_` + email address, 5 min TTL
-- Frontend entry: `react_web/src/main.tsx`
-- Frontend routes: `react_web/src/App.tsx`
-- Frontend styles: `react_web/src/styles/global.css`
-- Frontend constants: `react_web/src/utils/constants.ts` (BACKEND_URL)
+- Frontend entry: `frontend/src/main.tsx`
+- Frontend routes: `frontend/src/App.tsx`
+- Frontend styles: `frontend/src/styles/global.css`
+- Frontend constants: `frontend/src/utils/constants.ts` (BACKEND_URL)
 
 ## Teaching Documentation
 
-Detailed step-by-step guides in `a teacher/` directory (26 documents, numbered 01-26). Follow document order for implementation.
+Detailed step-by-step guides in `lessons/` directory (26 documents, numbered 01-26). Follow document order for implementation.
 
-**IMPORTANT**: When modifying any source code, you MUST同步更新 corresponding teaching documents in `a teacher/`. This ensures teaching materials stay accurate with actual implementation.
+**IMPORTANT**: When modifying any source code, you MUST同步更新 corresponding teaching documents in `lessons/`. This ensures teaching materials stay accurate with actual implementation.
 
 Examples:
 - Modify `pkg/util/random/random_int.go` → Update `07-Redis邮箱验证码详细步骤.md`

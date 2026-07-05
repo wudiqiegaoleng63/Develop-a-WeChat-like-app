@@ -12,7 +12,7 @@
 ## 项目背景
 
 这是一个仿微信聊天应用，后端是Go + Gin框架，前端使用React 18 + TypeScript + Zustand + Ant Design 5.x。
-项目路径：react_web/src/
+项目路径：frontend/src/
 
 ## 路由配置
 
@@ -55,7 +55,7 @@
 
 ### 面板A：启用/禁用用户
 
-数据加载：调用 `getUserInfoList(owner_id)` API（已存在于 react_web/src/api/user.ts）
+数据加载：调用 `getUserInfoList(owner_id)` API（已存在于 frontend/src/api/user.ts）
 
 表格列：
 | 列名 | 字段 | 显示方式 |
@@ -92,7 +92,7 @@
 
 ### 面板D：启用/禁用群组
 
-数据加载：调用 `getGroupInfoList()` API（已存在于 react_web/src/api/group.ts）
+数据加载：调用 `getGroupInfoList()` API（已存在于 frontend/src/api/group.ts）
 
 表格列：
 | 列名 | 字段 | 显示方式 |
@@ -118,14 +118,14 @@
 ## 已有的API函数（直接import使用）
 
 ```typescript
-// react_web/src/api/user.ts
+// frontend/src/api/user.ts
 export async function getUserInfoList(owner_id: string): Promise<ApiResponse<UserInfo[]>>
 export async function ableUsers(data: { uuid_list: string[]; is_admin: number }): Promise<ApiResponse<null>>
 export async function disableUsers(data: { uuid_list: string[]; is_admin: number }): Promise<ApiResponse<null>>
 export async function deleteUsers(data: { uuid_list: string[]; is_admin: number }): Promise<ApiResponse<null>>
 export async function setAdmin(data: { uuid_list: string[]; is_admin: number }): Promise<ApiResponse<null>>
 
-// react_web/src/api/group.ts
+// frontend/src/api/group.ts
 export async function getGroupInfoList(): Promise<ApiResponse<GroupInfo[]>>
 export async function deleteGroups(uuid_list: string[]): Promise<ApiResponse<null>>
 export async function setGroupsStatus(data: { uuid_list: string[]; status: number }): Promise<ApiResponse<null>>
@@ -134,7 +134,7 @@ export async function setGroupsStatus(data: { uuid_list: string[]; status: numbe
 ## 类型定义
 
 ```typescript
-// react_web/src/types/user.ts
+// frontend/src/types/user.ts
 export interface UserInfo {
   uuid: string
   nickname: string
@@ -144,7 +144,7 @@ export interface UserInfo {
   is_admin: number     // 0=普通, 1=管理员
 }
 
-// react_web/src/types/group.ts
+// frontend/src/types/group.ts
 export interface GroupInfo {
   group_id: string
   group_name: string
@@ -182,7 +182,7 @@ showToast('操作失败', 'error')
 ## 文件结构
 
 ```
-react_web/src/
+frontend/src/
   pages/
     ManagerPage.tsx          # 管理员主页面
   components/
@@ -212,12 +212,12 @@ react_web/src/
 ## 技术架构
 
 ### 信令传输
-复用已有的WebSocket连接（react_web/src/services/websocket.ts），使用 type: 3（AV消息类型）。
+复用已有的WebSocket连接（frontend/src/services/websocket.ts），使用 type: 3（AV消息类型）。
 信令数据放在 ChatMessage 的 av_data 字段中（JSON字符串）。
 
 ### 需要修改的类型定义
 
-在 react_web/src/types/message.ts 中，ChatMessage 接口需要添加 av_data 字段：
+在 frontend/src/types/message.ts 中，ChatMessage 接口需要添加 av_data 字段：
 ```typescript
 export interface ChatMessage {
   // ... 现有字段 ...
@@ -342,7 +342,7 @@ wsService.send(request)
 
 ## WebSocket消息处理
 
-修改 react_web/src/hooks/useWebSocket.ts，添加AV消息处理：
+修改 frontend/src/hooks/useWebSocket.ts，添加AV消息处理：
 
 ```typescript
 // 在 onmessage 回调中
@@ -359,7 +359,7 @@ if (message.type === 3) {
 ## 文件结构
 
 ```
-react_web/src/
+frontend/src/
   components/
     chat/
       AVCallModal.tsx       # 音视频通话弹窗组件
@@ -434,7 +434,7 @@ function useWebRTC() {
 
 ## 已有的ChatHeader组件
 
-文件路径：react_web/src/components/chat/ChatHeader.tsx
+文件路径：frontend/src/components/chat/ChatHeader.tsx
 
 当前下拉菜单中，"个人信息"和"群聊信息"的onClick是占位的 showToast。
 需要将它们替换为打开对应弹窗的逻辑。
@@ -482,7 +482,7 @@ function useWebRTC() {
 ## ContactInfo 类型定义
 
 ```typescript
-// react_web/src/types/user.ts
+// frontend/src/types/user.ts
 export interface ContactInfo {
   contact_id: string
   contact_name: string
@@ -502,7 +502,7 @@ export interface ContactInfo {
 
 ## 需要修改的文件
 
-### 1. 新建组件：react_web/src/components/chat/ContactInfoModal.tsx
+### 1. 新建组件：frontend/src/components/chat/ContactInfoModal.tsx
 
 ```tsx
 interface ContactInfoModalProps {
@@ -515,7 +515,7 @@ interface ContactInfoModalProps {
 
 根据 isGroup 显示不同的内容布局。
 
-### 2. 修改：react_web/src/components/chat/ChatHeader.tsx
+### 2. 修改：frontend/src/components/chat/ChatHeader.tsx
 
 添加状态控制弹窗显示：
 ```tsx
@@ -553,7 +553,7 @@ const [infoModalVisible, setInfoModalVisible] = useState(false)
 ## 文件结构
 
 ```
-react_web/src/
+frontend/src/
   components/
     chat/
       ChatHeader.tsx          # 修改：添加弹窗状态和调用
