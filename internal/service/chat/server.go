@@ -1,13 +1,18 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/websocket"
+	"kama-chat-server/internal/agent"
 	"kama-chat-server/internal/dao"
 	"kama-chat-server/internal/dto/request"
 	"kama-chat-server/internal/dto/respond"
 	"kama-chat-server/internal/model"
+	myredis "kama-chat-server/internal/service/redis"
 	"kama-chat-server/pkg/constants"
 	"kama-chat-server/pkg/enum/message/message_status_enum"
 	"kama-chat-server/pkg/enum/message/message_type_enum"
@@ -17,9 +22,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-    myredis "kama-chat-server/internal/service/redis"
-	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/websocket"
 )
 
 type Server struct {
@@ -100,10 +102,10 @@ func (s *Server) Start() {
 				// log.Println("原消息为：", data, "反序列化后为：", chatMessageReq)
 				if chatMessageReq.Type == message_type_enum.Text {
 					// 存message
-                    value, err := random.GetNowAndLenRandomString(11)
-                    if err != nil {
-                        zlog.Error(err.Error())
-                    }
+					value, err := random.GetNowAndLenRandomString(11)
+					if err != nil {
+						zlog.Error(err.Error())
+					}
 					message := model.Message{
 						Uuid:       fmt.Sprintf("M%s", value),
 						SessionId:  chatMessageReq.SessionId,
@@ -187,6 +189,11 @@ func (s *Server) Start() {
 							}
 						}
 
+						// ===== Agent 私聊触发 =====
+						// 接收方为系统 Agent 时，协程触发 LLM 回复，回复复用现有推送通道
+						if agent.IsAgentTarget(message.ReceiveId) {
+							go s.triggerPrivateAgent(message.SendId)
+						}
 					} else if message.ReceiveId[0] == 'G' { // 发送给Group
 						messageRsp := respond.GetGroupMessageListRespond{
 							SendId:     message.SendId,
@@ -253,12 +260,17 @@ func (s *Server) Start() {
 							}
 						}
 					}
+					// ===== Agent 群聊触发 =====
+					// 消息命中 @AI助手 / /ai 等触发词时，协程触发 LLM 回复
+					if _, ok := agent.MatchGroupTrigger(message.Content); ok {
+						go s.triggerGroupAgent(message.ReceiveId, message.SendId, message.Content)
+					}
 				} else if chatMessageReq.Type == message_type_enum.File {
 					// 存message
-                    value, err := random.GetNowAndLenRandomString(11)
-                    if err != nil {
-                        zlog.Error(err.Error())
-                    }
+					value, err := random.GetNowAndLenRandomString(11)
+					if err != nil {
+						zlog.Error(err.Error())
+					}
 					message := model.Message{
 						Uuid:       fmt.Sprintf("M%s", value),
 						SessionId:  chatMessageReq.SessionId,
@@ -413,10 +425,10 @@ func (s *Server) Start() {
 						zlog.Error(err.Error())
 					}
 					//log.Println(avData)
-                    value, err := random.GetNowAndLenRandomString(11)
-                    if err != nil {
-                        zlog.Error(err.Error())
-                    }
+					value, err := random.GetNowAndLenRandomString(11)
+					if err != nil {
+						zlog.Error(err.Error())
+					}
 					message := model.Message{
 						Uuid:       fmt.Sprintf("M%s", value),
 						SessionId:  chatMessageReq.SessionId,
@@ -517,4 +529,63 @@ func (s *Server) RemoveClient(uuid string) {
 	s.mutex.Lock()
 	delete(s.Clients, uuid)
 	s.mutex.Unlock()
+}
+
+// triggerPrivateAgent 私聊触发 Agent：调用 LLM 生成回复，持久化后推送给用户。
+// 在协程中执行，不阻塞主转发循环。失败时返回降级提示。
+func (s *Server) triggerPrivateAgent(userID string) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(constants.AgentTimeoutSec)*time.Second)
+	defer cancel()
+
+	reply := agent.AgentService.TriggerPrivate(ctx, userID)
+	if reply == nil || len(reply.Payload) == 0 {
+		return
+	}
+	s.pushToUser(userID, reply.Payload, reply.Message.Uuid)
+}
+
+// triggerGroupAgent 群聊触发 Agent：调用 LLM 生成回复，持久化后群发给除 Agent 外的在线成员。
+func (s *Server) triggerGroupAgent(groupID, userID, rawContent string) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(constants.AgentTimeoutSec)*time.Second)
+	defer cancel()
+
+	reply := agent.AgentService.TriggerGroup(ctx, groupID, userID, rawContent)
+	if reply == nil || len(reply.Payload) == 0 {
+		return
+	}
+	s.pushToGroup(groupID, reply.Payload, reply.Message.Uuid)
+}
+
+// pushToUser 把 Agent 回复载荷推送给指定在线用户（参考现有私聊推送逻辑）。
+func (s *Server) pushToUser(uuid string, payload []byte, msgUuid string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	if c, ok := s.Clients[uuid]; ok {
+		c.SendBack <- &MessageBack{Message: payload, Uuid: msgUuid}
+	}
+}
+
+// pushToGroup 把 Agent 回复载荷群发给除 Agent 外的在线成员。
+func (s *Server) pushToGroup(groupID string, payload []byte, msgUuid string) {
+	var group model.GroupInfo
+	if res := dao.GormDB.Where("uuid = ?", groupID).First(&group); res.Error != nil {
+		zlog.Error("Agent pushToGroup load group: " + res.Error.Error())
+		return
+	}
+	var members []string
+	if err := json.Unmarshal(group.Members, &members); err != nil {
+		zlog.Error("Agent pushToGroup unmarshal members: " + err.Error())
+		return
+	}
+	mb := &MessageBack{Message: payload, Uuid: msgUuid}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	for _, m := range members {
+		if m == constants.AgentBotUuid {
+			continue
+		}
+		if c, ok := s.Clients[m]; ok {
+			c.SendBack <- mb
+		}
+	}
 }
