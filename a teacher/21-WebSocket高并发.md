@@ -20,7 +20,7 @@ Model → DAO → Service → Controller → 路由注册 → WebSocket
 |------|----------|------|
 | 1 | `internal/service/chat/client.go` | WebSocket客户端（Read/Write/初始化/登出） |
 | 2 | `internal/service/chat/server.go` | Channel模式Server |
-| 3 | `internal/service/chat/kafka_server.go` | Kafka模式Server（文档19已创建） |
+| 3 | `internal/service/chat/kafka_server.go` | Kafka模式Server（文档20已创建） |
 | 4 | `api/v1/ws_controller.go` | WebSocket Controller |
 | 5 | `internal/dto/request/ws_logout_request.go` | 登出请求结构体 |
 

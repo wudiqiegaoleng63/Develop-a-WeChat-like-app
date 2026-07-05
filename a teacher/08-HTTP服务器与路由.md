@@ -107,7 +107,7 @@ func registerRoutes() {
     GE.POST("/user/setAdmin", v1.SetAdmin)             // 设置管理员
     GE.POST("/user/sendSmsCode", v1.SendSmsCode)       // 发送验证码
     GE.POST("/user/smsLogin", v1.SmsLogin)             // 验证码登录
-    GE.POST("/user/wsLogout", v1.WsLogout)              // WebSocket登出（详见文档19）
+    GE.POST("/user/wsLogout", v1.WsLogout)              // WebSocket登出（详见文档21）
     
     // ----------------------
     // 群组相关路由 (POST)
