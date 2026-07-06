@@ -67,7 +67,7 @@ exit
 ### 3.1 安装Redis客户端
 
 ```bash
-cd C:\Users\li\Desktop\kama-chat-server
+cd C:\Users\li\Desktop\gochat
 go get github.com/redis/go-redis/v9
 ```
 
@@ -110,7 +110,7 @@ smtpHost     = "smtp.qq.com"           # SMTP服务器
 smtpPort     = 465                      # 端口（SSL加密）
 smtpUsername = "your_email@qq.com"      # 发件邮箱
 smtpPassword = "xxxxxxxxxxxxxxxx"       # 授权码（16位）
-fromName     = "KamaChat"               # 发件人名称
+fromName     = "GoChat"               # 发件人名称
 ```
 
 ### 4.2 添加EmailConfig结构体
@@ -229,8 +229,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"kama-chat-server/internal/config"
-	"kama-chat-server/pkg/zlog"
+	"gochat/internal/config"
+	"gochat/pkg/zlog"
 )
 
 var redisClient *redis.Client
@@ -555,10 +555,10 @@ import (
 
 	"github.com/jordan-wright/email"
 
-	"kama-chat-server/internal/config"
-	"kama-chat-server/internal/service/redis"
-	"kama-chat-server/pkg/constants"
-	"kama-chat-server/pkg/util/random"
+	"gochat/internal/config"
+	"gochat/internal/service/redis"
+	"gochat/pkg/constants"
+	"gochat/pkg/util/random"
 )
 
 // ============================================================
@@ -661,7 +661,7 @@ func sendEmail(toEmail string, code string) error {
 	e := email.NewEmail()
 	e.From = conf.EmailConfig.FromName + " <" + conf.EmailConfig.SmtpUsername + ">"
 	e.To = []string{toEmail}
-	e.Subject = "【KamaChat】邮箱验证码"
+	e.Subject = "【GoChat】邮箱验证码"
 	e.HTML = []byte(buildEmailHTML(code))
 
 	// ★端口465是SSL端口，需要用SendWithTLS
@@ -741,10 +741,10 @@ type VerifyEmailCodeRequest struct {
 
 ```go
 import (
-	"kama-chat-server/internal/dto/request"
-	"kama-chat-server/internal/service/email"
-	"kama-chat-server/pkg/constants"
-	"kama-chat-server/pkg/zlog"
+	"gochat/internal/dto/request"
+	"gochat/internal/service/email"
+	"gochat/pkg/constants"
+	"gochat/pkg/zlog"
 
 	"github.com/gin-gonic/gin"
 )
@@ -782,7 +782,7 @@ func VerifyEmailCode(c *gin.Context) {
 
 ```go
 import (
-	v1 "kama-chat-server/api/v1"  // 导入v1包
+	v1 "gochat/api/v1"  // 导入v1包
 	// ... 其他导入
 )
 
@@ -802,8 +802,8 @@ func init() {
 ### 9.1 启动服务
 
 ```bash
-cd C:\Users\li\Desktop\kama-chat-server
-go run cmd/kama-chat-server/main.go
+cd C:\Users\li\Desktop\gochat
+go run cmd/gochat/main.go
 ```
 
 ### 9.2 发送验证码
@@ -941,7 +941,7 @@ e.SendWithTLS(addr, auth, tlsConfig)
 ## 十二、文件清单
 
 ```
-kama-chat-server/
+gochat/
 ├── configs/
 │   └── config_local.toml           # 添加emailConfig
 ├── internal/

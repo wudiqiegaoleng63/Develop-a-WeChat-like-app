@@ -1,4 +1,4 @@
-module kama-chat-server
+module gochat
 
 go 1.26.1
 

@@ -46,8 +46,8 @@ import (
     "gorm.io/driver/mysql"
     
     // ★项目内部依赖
-    "kama-chat-server/internal/config"
-    "kama-chat-server/internal/model"
+    "gochat/internal/config"
+    "gochat/internal/model"
 )
 
 // ============================================================
@@ -134,7 +134,7 @@ func init() {
 
 ```go
 // 根据你的配置文件
-dsn := "root:Li2006116.@tcp(127.0.0.1:3306)/kama_chat?charset=utf8mb4&parseTime=True&loc=Local"
+dsn := "root:Li2006116.@tcp(127.0.0.1:3306)/gochat?charset=utf8mb4&parseTime=True&loc=Local"
 ```
 
 ---
@@ -247,7 +247,7 @@ sqlDB.SetConnMaxLifetime(time.Hour) // 连接存活1小时后自动关闭
 ```go
 package service
 
-import "kama-chat-server/internal/dao"
+import "gochat/internal/dao"
 
 func GetUser(uuid string) {
     var user model.UserInfo
@@ -312,7 +312,7 @@ package main
 
 import (
     "fmt"
-    "kama-chat-server/internal/dao"  // ★导入就会自动执行init()
+    "gochat/internal/dao"  // ★导入就会自动执行init()
 )
 
 func main() {
@@ -323,7 +323,7 @@ func main() {
 
 运行：
 ```bash
-go run cmd/kama-chat-server/main.go
+go run cmd/gochat/main.go
 ```
 
 如果输出 "数据库连接成功，表结构已创建"，说明连接成功。
@@ -343,12 +343,12 @@ Error: Access denied for user 'root'@'localhost'
 ### 错误2: 数据库不存在
 
 ```
-Error: Unknown database 'kama_chat'
+Error: Unknown gochat
 ```
 
 解决：先在MySQL中创建数据库
 ```sql
-CREATE DATABASE kama_chat CHARACTER SET utf8mb4;
+CREATE DATABASE gochat CHARACTER SET utf8mb4;
 ```
 
 ### 错误3: MySQL未启动

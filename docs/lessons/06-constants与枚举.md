@@ -360,12 +360,12 @@ func AbleUsers(uuids []string) (string, int) {
 
 ```go
 import (
-    contact_status_enum "kama_chat_server/pkg/enum/contact/contact_status_enum"
-    contact_type_enum "kama_chat_server/pkg/enum/contact/contact_type_enum"
-    add_mode_enum "kama_chat_server/pkg/enum/group_info/add_mode_enum"
-    group_status_enum "kama_chat_server/pkg/enum/group_info/group_status_enum"
-    message_type_enum "kama_chat_server/pkg/enum/message/message_type_enum"
-    user_status_enum "kama_chat_server/pkg/enum/user_info/user_status_enum"
+    contact_status_enum "gochat/pkg/enum/contact/contact_status_enum"
+    contact_type_enum "gochat/pkg/enum/contact/contact_type_enum"
+    add_mode_enum "gochat/pkg/enum/group_info/add_mode_enum"
+    group_status_enum "gochat/pkg/enum/group_info/group_status_enum"
+    message_type_enum "gochat/pkg/enum/message/message_type_enum"
+    user_status_enum "gochat/pkg/enum/user_info/user_status_enum"
 )
 ```
 

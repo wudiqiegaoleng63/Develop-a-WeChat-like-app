@@ -10,8 +10,8 @@ import (
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/schema"
 
-	"kama-chat-server/pkg/constants"
-	"kama-chat-server/pkg/zlog"
+	"gochat/pkg/constants"
+	"gochat/pkg/zlog"
 )
 
 // ErrNotImplemented 流式接口暂未实现，MVP 阶段预留。

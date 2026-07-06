@@ -1,16 +1,16 @@
 package agent
 
 import (
-	"kama-chat-server/internal/dao"
-	"kama-chat-server/internal/model"
-	"kama-chat-server/pkg/constants"
-	"kama-chat-server/pkg/enum/user_info/user_status_enum"
-	"kama-chat-server/pkg/zlog"
+	"gochat/internal/dao"
+	"gochat/internal/model"
+	"gochat/pkg/constants"
+	"gochat/pkg/enum/user_info/user_status_enum"
+	"gochat/pkg/zlog"
 	"time"
 )
 
 // init 在包导入时幂等创建 AI 助手系统用户。
-// 通过 blank import _ "kama-chat-server/internal/agent" 触发，
+// 通过 blank import _ "gochat/internal/agent" 触发，
 // 不需要手动执行 SQL migration。
 func init() {
 	bootstrapAgentBot()

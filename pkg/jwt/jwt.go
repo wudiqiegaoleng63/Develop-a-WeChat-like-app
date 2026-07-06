@@ -2,7 +2,7 @@ package jwt
 
 import (
 	"errors"
-	"kama-chat-server/internal/config"
+	"gochat/internal/config"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"

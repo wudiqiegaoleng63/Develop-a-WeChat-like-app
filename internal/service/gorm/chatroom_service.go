@@ -1,6 +1,6 @@
 package gorm
 
-import "kama-chat-server/internal/dto/respond"
+import "gochat/internal/dto/respond"
 
 type chatRommService struct {
 }

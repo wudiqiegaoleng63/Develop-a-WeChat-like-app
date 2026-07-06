@@ -7,7 +7,7 @@
 ## 提示词一：管理员页面
 
 ```
-请为KamaChat项目开发管理员页面（React + TypeScript + Ant Design 5.x）。
+请为GoChat项目开发管理员页面（React + TypeScript + Ant Design 5.x）。
 
 ## 项目背景
 
@@ -202,7 +202,7 @@ frontend/src/
 ## 提示词二：音视频通话页面
 
 ```
-请为KamaChat项目实现音视频通话功能（React + TypeScript + WebRTC）。
+请为GoChat项目实现音视频通话功能（React + TypeScript + WebRTC）。
 
 ## 项目背景
 
@@ -425,7 +425,7 @@ function useWebRTC() {
 ## 提示词三：查看信息弹窗
 
 ```
-请为KamaChat项目实现联系人/群组信息查看弹窗（React + TypeScript + Ant Design 5.x）。
+请为GoChat项目实现联系人/群组信息查看弹窗（React + TypeScript + Ant Design 5.x）。
 
 ## 项目背景
 

@@ -2,8 +2,8 @@ package kafka
 
 import (
 	"context"
-	myconfig "kama-chat-server/internal/config"
-	"kama-chat-server/pkg/zlog"
+	myconfig "gochat/internal/config"
+	"gochat/pkg/zlog"
 	"time"
 
 	"github.com/segmentio/kafka-go"

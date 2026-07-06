@@ -32,8 +32,8 @@
 ## 项目结构
 
 ```
-kama-chat-server/
-├── cmd/kama-chat-server/     # 入口文件
+gochat/
+├── cmd/gochat/     # 入口文件
 ├── api/v1/                   # Controller 层
 ├── internal/
 │   ├── config/               # 配置加载（TOML）
@@ -87,7 +87,7 @@ Request → Controller → Service → DAO → Database
 
 ```bash
 git clone <repo-url>
-cd kama-chat-server
+cd gochat
 ```
 
 ### 2. 配置数据库
@@ -95,7 +95,7 @@ cd kama-chat-server
 创建 MySQL 数据库：
 
 ```sql
-CREATE DATABASE kama_chat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE gochat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 > GORM 的 `AutoMigrate` 会在启动时自动创建表，无需手动建表。
@@ -115,7 +115,7 @@ host = "127.0.0.1"
 port = 3306
 user = "root"
 password = "your_password"        # 改为你的 MySQL 密码
-databaseName = "kama_chat"
+databaseName = "gochat"
 
 [logConfig]
 logPath = "./logs/app.log"
@@ -182,7 +182,7 @@ bin/kafka-topics.sh --create --topic logout --bootstrap-server localhost:9092
 go mod download
 
 # 启动服务
-go run cmd/kama-chat-server/main.go
+go run cmd/gochat/main.go
 ```
 
 后端默认运行在 `http://127.0.0.1:8000`
@@ -190,7 +190,7 @@ go run cmd/kama-chat-server/main.go
 #### 生产构建
 
 ```bash
-go build -o gochat-server cmd/kama-chat-server/main.go
+go build -o gochat-server cmd/gochat/main.go
 ./gochat-server
 ```
 

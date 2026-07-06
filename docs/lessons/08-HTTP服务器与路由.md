@@ -54,7 +54,7 @@ import (
     "github.com/gin-contrib/cors"
     
     // ★项目内部依赖
-    "kama-chat-server/internal/config"
+    "gochat/internal/config"
 )
 
 // ============================================================
@@ -295,10 +295,10 @@ package v1
 
 import (
     "github.com/gin-gonic/gin"
-    "kama-chat-server/internal/dto/request"
-    "kama-chat-server/internal/service/gorm"
-    "kama-chat-server/pkg/zlog"
-    "kama-chat-server/pkg/constants"
+    "gochat/internal/dto/request"
+    "gochat/internal/service/gorm"
+    "gochat/pkg/zlog"
+    "gochat/pkg/constants"
 )
 
 // ============================================================
@@ -416,16 +416,16 @@ GE.Static("/static/avatars", "./static/avatars")
 
 ## 八、main.go入口
 
-**文件位置:** `cmd/kama-chat-server/main.go`
+**文件位置:** `cmd/gochat/main.go`
 
 ```go
 package main
 
 import (
     // ★导入所有包，触发init()自动执行
-    "kama-chat-server/internal/config"    // 配置加载
-    "kama-chat-server/internal/dao"       // 数据库连接
-    "kama-chat-server/internal/https_server" // HTTP服务器
+    "gochat/internal/config"    // 配置加载
+    "gochat/internal/dao"       // 数据库连接
+    "gochat/internal/https_server" // HTTP服务器
 )
 
 func main() {
@@ -457,7 +457,7 @@ mkdir internal/dto/respond
 创建以下文件：
 - `api/v1/controller.go` - ★包含 JsonBack 函数
 - `internal/https_server/https_server.go` - 路由注册
-- `cmd/kama-chat-server/main.go` - 入口文件
+- `cmd/gochat/main.go` - 入口文件
 
 ### 步骤3: 安装依赖
 

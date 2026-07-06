@@ -48,14 +48,14 @@ import (
 	"log"
 	"strconv"
 
-	"kama-chat-server/internal/config"
-	"kama-chat-server/internal/dao"
-	"kama-chat-server/internal/dto/request"
-	"kama-chat-server/internal/model"
-	myKafka "kama-chat-server/internal/service/kafka"
-	"kama-chat-server/pkg/constants"
-	"kama-chat-server/pkg/enum/message/message_status_enum"
-	"kama-chat-server/pkg/zlog"
+	"gochat/internal/config"
+	"gochat/internal/dao"
+	"gochat/internal/dto/request"
+	"gochat/internal/model"
+	myKafka "gochat/internal/service/kafka"
+	"gochat/pkg/constants"
+	"gochat/pkg/enum/message/message_status_enum"
+	"gochat/pkg/zlog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -257,16 +257,16 @@ import (
 	"fmt"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
-	"kama_chat_server/internal/dao"
-	"kama_chat_server/internal/dto/request"
-	"kama_chat_server/internal/dto/respond"
-	"kama_chat_server/internal/model"
-	myredis "kama_chat_server/internal/service/redis"
-	"kama_chat_server/pkg/constants"
-	"kama_chat_server/pkg/enum/message/message_status_enum"
-	"kama_chat_server/pkg/enum/message/message_type_enum"
-	"kama_chat_server/pkg/util/random"
-	"kama_chat_server/pkg/zlog"
+	"gochat/internal/dao"
+	"gochat/internal/dto/request"
+	"gochat/internal/dto/respond"
+	"gochat/internal/model"
+	myredis "gochat/internal/service/redis"
+	"gochat/pkg/constants"
+	"gochat/pkg/enum/message/message_status_enum"
+	"gochat/pkg/enum/message/message_type_enum"
+	"gochat/pkg/util/random"
+	"gochat/pkg/zlog"
 	"log"
 	"strings"
 	"sync"
@@ -760,10 +760,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"kama_chat_server/internal/dto/request"
-	"kama_chat_server/internal/service/chat"
-	"kama_chat_server/pkg/constants"
-	"kama_chat_server/pkg/zlog"
+	"gochat/internal/dto/request"
+	"gochat/internal/service/chat"
+	"gochat/pkg/constants"
+	"gochat/pkg/zlog"
 )
 
 // WsLogin WebSocket登录
@@ -853,7 +853,7 @@ func registerRoutes() {
 
 ## 七、main.go 启动Server
 
-**文件位置:** `cmd/kama-chat-server/main.go`
+**文件位置:** `cmd/gochat/main.go`
 
 ### 完整代码
 
@@ -862,12 +862,12 @@ package main
 
 import (
 	"fmt"
-	"kama_chat_server/internal/config"
-	"kama_chat_server/internal/https_server"
-	"kama_chat_server/internal/service/chat"
-	"kama_chat_server/internal/service/kafka"
-	myredis "kama_chat_server/internal/service/redis"
-	"kama_chat_server/pkg/zlog"
+	"gochat/internal/config"
+	"gochat/internal/https_server"
+	"gochat/internal/service/chat"
+	"gochat/internal/service/kafka"
+	myredis "gochat/internal/service/redis"
+	"gochat/pkg/zlog"
 	"os"
 	"os/signal"
 	"syscall"

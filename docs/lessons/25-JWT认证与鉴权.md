@@ -198,7 +198,7 @@ package jwt
 
 import (
 	"errors"
-	"kama-chat-server/internal/config"
+	"gochat/internal/config"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -388,8 +388,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 
-	myjwt "kama-chat-server/pkg/jwt"
-	"kama-chat-server/pkg/zlog"
+	myjwt "gochat/pkg/jwt"
+	"gochat/pkg/zlog"
 )
 
 // JWTAuth Gin 中间件：校验 Authorization: Bearer <token> 或 query ?token=<jwt>

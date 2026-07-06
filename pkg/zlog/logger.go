@@ -1,7 +1,7 @@
 package zlog
 
 import (
-	"kama-chat-server/internal/config"
+	"gochat/internal/config"
 	"os"
 	"path"
 	"runtime"

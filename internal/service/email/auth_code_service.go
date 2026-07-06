@@ -8,10 +8,10 @@ import (
 
 	"github.com/jordan-wright/email"
 
-	"kama-chat-server/internal/config"
-	"kama-chat-server/internal/service/redis"
-	"kama-chat-server/pkg/constants"
-	"kama-chat-server/pkg/util/random"
+	"gochat/internal/config"
+	"gochat/internal/service/redis"
+	"gochat/pkg/constants"
+	"gochat/pkg/util/random"
 )
 
 // ============================================================

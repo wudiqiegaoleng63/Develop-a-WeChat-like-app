@@ -6,9 +6,9 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	v1 "kama-chat-server/api/v1"
-	"kama-chat-server/internal/config"
-	"kama-chat-server/internal/middleware"
+	v1 "gochat/api/v1"
+	"gochat/internal/config"
+	"gochat/internal/middleware"
 )
 
 // 全局gin实例

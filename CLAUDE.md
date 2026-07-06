@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-KamaChat - A full-stack instant messaging application. Go backend (Gin + GORM) with React + TypeScript frontend.
+GoChat - A full-stack instant messaging application. Go backend (Gin + GORM) with React + TypeScript frontend.
 
 ## Build & Run Commands
 
@@ -13,7 +13,7 @@ KamaChat - A full-stack instant messaging application. Go backend (Gin + GORM) w
 go build ./...
 
 # Backend: Run server (default port 8000)
-go run cmd/kama-chat-server/main.go
+go run cmd/gochat/main.go
 
 # Backend: Run tests (if any)
 go test ./...
@@ -56,11 +56,11 @@ Request → Controller → Service → DAO → Database
 **Init-based initialization**: Packages use `init()` for auto-setup. Import with `_` to trigger:
 ```go
 import (
-    _ "kama-chat-server/internal/config"    // Loads config from configs/config_local.toml
-    _ "kama-chat-server/internal/dao"       // Connects MySQL, AutoMigrate tables
-    _ "kama-chat-server/internal/service/redis"  // Connects Redis
-    _ "kama-chat-server/internal/service/email"  // Email service ready
-    "kama-chat-server/internal/https_server"      // Route registration
+    _ "gochat/internal/config"    // Loads config from configs/config_local.toml
+    _ "gochat/internal/dao"       // Connects MySQL, AutoMigrate tables
+    _ "gochat/internal/service/redis"  // Connects Redis
+    _ "gochat/internal/service/email"  // Email service ready
+    "gochat/internal/https_server"      // Route registration
 )
 ```
 
@@ -157,7 +157,7 @@ Email uses QQ SMTP (smtp.qq.com:465 with TLS), not SMS. Requires 16-char authori
 
 ## Important File Locations
 
-- Backend entry point: `cmd/kama-chat-server/main.go`
+- Backend entry point: `cmd/gochat/main.go`
 - Backend routes: `internal/https_server/https_server.go` - `registerRoutes()`
 - JsonBack: `api/v1/controller.go` (same package as controllers, call directly)
 - Verification code Redis key: `email_code_` + email address, 5 min TTL

@@ -139,8 +139,8 @@ import (
     "context"
     "time"
     "github.com/segmentio/kafka-go"
-    myconfig "kama_chat_server/internal/config"
-    "kama_chat_server/pkg/zlog"
+    myconfig "gochat/internal/config"
+    "gochat/pkg/zlog"
 )
 
 // 全局上下文
@@ -231,8 +231,8 @@ import (
     "context"
     "time"
     "github.com/segmentio/kafka-go"
-    myconfig "kama_chat_server/internal/config"  // ★用别名避免与config包名冲突
-    "kama_chat_server/pkg/zlog"
+    myconfig "gochat/internal/config"  // ★用别名避免与config包名冲突
+    "gochat/pkg/zlog"
 )
 ```
 
@@ -321,16 +321,16 @@ import (
     "fmt"
     "github.com/go-redis/redis/v8"
     "github.com/gorilla/websocket"
-    "kama_chat_server/internal/dao"
-    "kama_chat_server/internal/dto/request"
-    "kama_chat_server/internal/dto/respond"
-    "kama_chat_server/internal/model"
-    myredis "kama_chat_server/internal/service/redis"
-    "kama_chat_server/pkg/constants"
-    "kama_chat_server/pkg/enum/message/message_status_enum"
-    "kama_chat_server/pkg/enum/message/message_type_enum"
-    "kama_chat_server/pkg/util/random"
-    "kama_chat_server/pkg/zlog"
+    "gochat/internal/dao"
+    "gochat/internal/dto/request"
+    "gochat/internal/dto/respond"
+    "gochat/internal/model"
+    myredis "gochat/internal/service/redis"
+    "gochat/pkg/constants"
+    "gochat/pkg/enum/message/message_status_enum"
+    "gochat/pkg/enum/message/message_type_enum"
+    "gochat/pkg/util/random"
+    "gochat/pkg/zlog"
     "log"
     "strings"
     "sync"
@@ -424,17 +424,17 @@ import (
     "fmt"
     "github.com/go-redis/redis/v8"
     "github.com/gorilla/websocket"
-    "kama_chat_server/internal/dao"
-    "kama_chat_server/internal/dto/request"
-    "kama_chat_server/internal/dto/respond"
-    "kama_chat_server/internal/model"
-    "kama_chat_server/internal/service/kafka"
-    myredis "kama_chat_server/internal/service/redis"
-    "kama_chat_server/pkg/constants"
-    "kama_chat_server/pkg/enum/message/message_status_enum"
-    "kama_chat_server/pkg/enum/message/message_type_enum"
-    "kama_chat_server/pkg/util/random"
-    "kama_chat_server/pkg/zlog"
+    "gochat/internal/dao"
+    "gochat/internal/dto/request"
+    "gochat/internal/dto/respond"
+    "gochat/internal/model"
+    "gochat/internal/service/kafka"
+    myredis "gochat/internal/service/redis"
+    "gochat/pkg/constants"
+    "gochat/pkg/enum/message/message_status_enum"
+    "gochat/pkg/enum/message/message_type_enum"
+    "gochat/pkg/util/random"
+    "gochat/pkg/zlog"
     "log"
     "os"
     "sync"
@@ -583,14 +583,14 @@ import (
     "github.com/gin-gonic/gin"
     "github.com/gorilla/websocket"
     "github.com/segmentio/kafka-go"
-    "kama_chat_server/internal/config"
-    "kama_chat_server/internal/dao"
-    "kama_chat_server/internal/dto/request"
-    "kama_chat_server/internal/model"
-    myKafka "kama_chat_server/internal/service/kafka"
-    "kama_chat_server/pkg/constants"
-    "kama_chat_server/pkg/enum/message/message_status_enum"
-    "kama_chat_server/pkg/zlog"
+    "gochat/internal/config"
+    "gochat/internal/dao"
+    "gochat/internal/dto/request"
+    "gochat/internal/model"
+    myKafka "gochat/internal/service/kafka"
+    "gochat/pkg/constants"
+    "gochat/pkg/enum/message/message_status_enum"
+    "gochat/pkg/zlog"
     "log"
     "net/http"
     "strconv"
@@ -735,17 +735,17 @@ func (k *KafkaServer) Start() {
 ### main.go完整代码
 
 ```go
-// cmd/kama-chat-server/main.go
+// cmd/gochat/main.go
 package main
 
 import (
     "fmt"
-    "kama_chat_server/internal/config"
-    "kama_chat_server/internal/https_server"
-    "kama_chat_server/internal/service/chat"
-    "kama_chat_server/internal/service/kafka"
-    myredis "kama_chat_server/internal/service/redis"
-    "kama_chat_server/pkg/zlog"
+    "gochat/internal/config"
+    "gochat/internal/https_server"
+    "gochat/internal/service/chat"
+    "gochat/internal/service/kafka"
+    myredis "gochat/internal/service/redis"
+    "gochat/pkg/zlog"
     "os"
     "os/signal"
     "syscall"
@@ -906,7 +906,7 @@ const (
 import (
     "log"
     "strings"
-    "kama_chat_server/pkg/zlog"
+    "gochat/pkg/zlog"
 )
 
 // normalizePath 标准化头像路径

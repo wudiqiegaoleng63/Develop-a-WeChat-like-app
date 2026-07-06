@@ -2,8 +2,8 @@ package dao
 
 import (
 	"fmt"
-	"kama-chat-server/internal/config"
-	"kama-chat-server/internal/model"
+	"gochat/internal/config"
+	"gochat/internal/model"
 	"time"
 
 	"gorm.io/driver/mysql"

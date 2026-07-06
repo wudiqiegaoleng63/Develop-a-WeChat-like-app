@@ -6,16 +6,16 @@ import (
 	"os/signal"
 	"syscall"
 
-	_ "kama-chat-server/internal/agent" // AI Agent：初始化时幂等创建 AI助手 系统用户
-	"kama-chat-server/internal/config"
-	_ "kama-chat-server/internal/dao"        // 数据库连接
-	"kama-chat-server/internal/https_server" // HTTP服务器（需要调用RunServer）
-	"kama-chat-server/internal/service/chat"
-	_ "kama-chat-server/internal/service/email" // 邮箱验证码服务
-	"kama-chat-server/internal/service/kafka"
-	_ "kama-chat-server/internal/service/redis" // Redis服务
-	myredis "kama-chat-server/internal/service/redis"
-	"kama-chat-server/pkg/zlog"
+	_ "gochat/internal/agent" // AI Agent：初始化时幂等创建 AI助手 系统用户
+	"gochat/internal/config"
+	_ "gochat/internal/dao"        // 数据库连接
+	"gochat/internal/https_server" // HTTP服务器（需要调用RunServer）
+	"gochat/internal/service/chat"
+	_ "gochat/internal/service/email" // 邮箱验证码服务
+	"gochat/internal/service/kafka"
+	_ "gochat/internal/service/redis" // Redis服务
+	myredis "gochat/internal/service/redis"
+	"gochat/pkg/zlog"
 )
 
 func main() {

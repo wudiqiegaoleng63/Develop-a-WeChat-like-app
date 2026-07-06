@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"kama-chat-server/internal/dao"
-	"kama-chat-server/internal/dto/request"
-	"kama-chat-server/internal/model"
-	"kama-chat-server/pkg/constants"
-	"kama-chat-server/pkg/enum/message/message_status_enum"
-	"kama-chat-server/pkg/enum/message/message_type_enum"
-	"kama-chat-server/pkg/util/random"
-	"kama-chat-server/pkg/zlog"
+	"gochat/internal/dao"
+	"gochat/internal/dto/request"
+	"gochat/internal/model"
+	"gochat/pkg/constants"
+	"gochat/pkg/enum/message/message_status_enum"
+	"gochat/pkg/enum/message/message_type_enum"
+	"gochat/pkg/util/random"
+	"gochat/pkg/zlog"
 
 	"github.com/go-redis/redis/v8"
-	myredis "kama-chat-server/internal/service/redis"
+	myredis "gochat/internal/service/redis"
 )
 
 // AgentService 封装 AI 助手在 IM 系统中的业务逻辑。
@@ -86,7 +86,7 @@ func (a *agentService) ChatWithGroupAgent(ctx context.Context, groupID, userID, 
 // 只读取当前用户与 Agent 的历史，不涉及他人私聊。
 func (a *agentService) buildPrivateContext(userID, content string) []Message {
 	msgs := []Message{
-		{Role: RoleSystem, Content: "你是 KamaChat 的 AI 助手，用简洁的中文回答用户问题。"},
+		{Role: RoleSystem, Content: "你是 GoChat 的 AI 助手，用简洁的中文回答用户问题。"},
 	}
 
 	history := a.lastNPrivateMessages(userID, constants.AgentBotUuid, constants.AgentPrivateContextLen)
