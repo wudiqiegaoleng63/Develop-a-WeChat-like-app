@@ -1,6 +1,6 @@
 # GoChat
 
-基于 Go + React + TypeScript 开发的全栈即时通讯应用。
+基于 Go + React + TypeScript 开发的全栈即时通讯应用，集成 CloudWeGo Eino AI 助手。
 
 ## 技术栈
 
@@ -15,6 +15,9 @@
 | Redis | 6.0+ | 缓存服务 |
 | Zap | 1.27.1 | 日志框架 |
 | Gorilla WebSocket | 1.5.3 | WebSocket |
+| golang-jwt/v5 | 5.3.1 | JWT 认证 |
+| CloudWeGo Eino | 0.9.12 | AI Agent 框架 |
+| segmentio/kafka-go | 0.4.51 | 消息队列（可选） |
 | QQ SMTP | - | 邮箱验证码 |
 
 ### 前端
@@ -23,8 +26,8 @@
 |------|------|------|
 | React | 18 | 前端框架 |
 | TypeScript | 5.x | 类型安全 |
-| Vite | 6.x | 构建工具 |
-| Zustand | 4.x | 状态管理 |
+| Vite | 5.x | 构建工具 |
+| Zustand | 5.x | 状态管理 |
 | React Router | 6.x | 路由管理 |
 | Ant Design | 5.x | UI 组件库 |
 | Axios | 1.x | HTTP 请求 |
@@ -33,14 +36,16 @@
 
 ```
 gochat/
-├── cmd/gochat/     # 入口文件
+├── cmd/gochat/               # 入口文件
 ├── api/v1/                   # Controller 层
 ├── internal/
+│   ├── agent/                # AI Agent 服务（Eino + Mock 双实现）
 │   ├── config/               # 配置加载（TOML）
 │   ├── dao/                  # 数据库连接
 │   ├── dto/
 │   │   ├── request/          # 请求结构体
 │   │   └── respond/          # 响应结构体
+│   ├── middleware/           # JWT 认证 + 管理员鉴权中间件
 │   ├── model/                # 数据库模型（6 张表）
 │   ├── service/
 │   │   ├── gorm/             # Service 层（业务逻辑）
@@ -52,14 +57,16 @@ gochat/
 ├── pkg/
 │   ├── constants/            # 常量定义
 │   ├── enum/                 # 枚举定义
+│   ├── jwt/                  # JWT 生成与解析
 │   ├── util/                 # 工具函数（随机数等）
 │   └── zlog/                 # Zap 日志封装
+├── docs/
+│   ├── lessons/              # 教学文档（26 篇，架构→JWT 全链路）
+│   └── build-log/            # 仿微信 Go 从零开发叙事文档
 ├── configs/                  # 配置文件
 ├── static/                   # 静态资源（头像/文件）
 ├── logs/                     # 日志文件
-├── frontend/                # React 前端项目
-├── lessons/                  # 教学文档（26 篇，架构→JWT 全链路）
-└── build-log/                # 仿微信 Go 从零开发叙事文档
+└── frontend/                 # React 前端项目
 ```
 
 ## 三层架构
@@ -70,6 +77,20 @@ Request → Controller → Service → DAO → Database
 ```
 
 开发顺序：Model → DAO → Service → Controller → 路由注册
+
+---
+
+## AI 助手功能
+
+项目集成了基于 CloudWeGo Eino 的 AI 助手，作为系统用户 `AI助手` 存在。
+
+- **私聊 Agent**：用户给 `AI助手` 发私聊消息，读取最近 N 条历史作为上下文，生成回复并写入消息表、推送 WebSocket
+- **群聊 Agent**：群消息含 `@AI助手`、`@agent` 或 `/ai` 前缀时触发，回复带 `@提问人`，未被触发不主动发言
+- **Provider 切换**：通过 `LLM_PROVIDER` 环境变量切换 `mock`（本地无 key 调试）/ `openai`（真实 LLM），支持任何 OpenAI 兼容接口
+- **超时与降级**：Agent 调用 25 秒超时，失败返回友好提示；Eino 初始化失败自动回退 Mock
+- **安全**：复用 JWT 鉴权的 userID，禁止客户端伪造；私聊 Agent 只读当前用户与 Agent 的历史，群聊 Agent 只读当前群历史
+
+详细配置见 [环境变量](#4-环境变量ai-助手可选) 一节。
 
 ---
 
@@ -137,6 +158,10 @@ smtpUsername = "your@qq.com"      # 发件邮箱
 smtpPassword = "xxxxxxxxxxxxxxxx"  # QQ 邮箱授权码（16 位，非 QQ 密码）
 fromName     = "GoChat"           # 发件人名称
 
+[jwtConfig]
+secret = "change-this-to-a-random-secret"  # 生产环境必须修改
+expireHours = 24
+
 [kafkaConfig]
 messageMode = "channel"           # 消息模式：channel（单机）或 kafka（分布式）
 hostPort = "127.0.0.1:9092"
@@ -151,7 +176,23 @@ timeout = 1
 - 邮箱验证码使用 QQ 邮箱 SMTP，需要去 QQ 邮箱设置中开启 SMTP 服务并获取 16 位授权码
 - `messageMode` 设为 `channel` 时无需安装 Kafka，适合单机部署
 - `messageMode` 设为 `kafka` 时需要安装并启动 Kafka，适合分布式部署
+- `jwtConfig.secret` 不能使用默认占位符，启动时会校验并拒绝运行
 - 生产环境建议修改 `host` 为 `0.0.0.0`
+
+### 4. 环境变量（AI 助手，可选）
+
+AI 助手默认使用 Mock 实现，无需任何配置即可体验。如需接入真实大模型，设置以下环境变量：
+
+```bash
+export LLM_PROVIDER=openai                          # mock | openai
+export OPENAI_API_KEY=your-api-key                  # API Key
+export OPENAI_BASE_URL=https://api.deepseek.com/    # OpenAI 兼容接口（可选）
+export LLM_MODEL=deepseek-chat                      # 模型名
+```
+
+支持的 Provider：
+- `mock`（默认）：本地不调用 LLM，返回模拟回复，适合开发调试
+- `openai`：通过 Eino 调用 OpenAI 或任何 OpenAI 兼容接口（DeepSeek / Qwen / Moonshot / 星火等）
 
 ### 3a. 安装 Kafka（可选）
 
@@ -175,7 +216,7 @@ bin/kafka-topics.sh --create --topic logout --bootstrap-server localhost:9092
 
 > 单机部署跳过此步骤，使用默认的 `channel` 模式即可。
 
-### 4. 启动后端
+### 5. 启动后端
 
 ```bash
 # 安装 Go 依赖
@@ -194,7 +235,7 @@ go build -o gochat-server cmd/gochat/main.go
 ./gochat-server
 ```
 
-### 5. 启动前端
+### 6. 启动前端
 
 ```bash
 cd frontend
@@ -226,11 +267,12 @@ npm run build
 
 构建产物在 `frontend/dist/`，后端已配置静态文件服务，可直接通过 `http://127.0.0.1:8000` 访问前端页面。
 
-### 6. 验证部署
+### 7. 验证部署
 
 1. 访问 `http://127.0.0.1:8000` 进入登录页
 2. 注册账号（需要邮箱验证码）
 3. 登录后即可使用聊天功能
+4. 在联系人中找到 `AI助手`，发消息即可触发 Agent 回复
 
 ---
 
@@ -351,6 +393,8 @@ npm run build
 - `code=200`：成功
 - `code=400`：业务错误（如密码错误、用户已存在）
 - `code=500`：系统错误
+- HTTP 401：未认证（token 缺失/过期/无效）
+- HTTP 403：已认证但无权限（如普通用户访问管理员接口）
 
 ## 前端路由
 
@@ -366,15 +410,19 @@ npm run build
 ## 功能特性
 
 - 用户注册/登录（邮箱+密码、邮箱+验证码）
+- JWT 认证与三级权限（公开 / 认证用户 / 管理员）
 - 一对一私聊、群聊
+- AI 助手（私聊 Agent + 群聊 @ 触发 Agent）
 - 好友申请/通过/拒绝/拉黑
 - 群组创建/加入/退出/解散
 - 群成员管理、加群审核
 - 文件/图片/头像上传
 - WebRTC 音视频通话
 - WebSocket 实时消息推送
+- Channel / Kafka 双消息模式（单机↔分布式可切换）
 - 管理员后台（用户管理、群组管理）
-- Redis 缓存（用户信息、群信息、会话列表）
+- Redis 缓存旁路（用户信息、群信息、消息列表、会话列表）
+- Zap 双输出结构化日志
 
 ## License
 
