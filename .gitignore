@@ -31,3 +31,6 @@ cmd/agent-test/
 # ===== 临时文件 =====
 *.tmp
 *.bak
+
+# Claude Code 本地配置，不跟踪
+CLAUDE.md

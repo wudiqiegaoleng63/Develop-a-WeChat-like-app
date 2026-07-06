@@ -90,6 +90,23 @@ Request → Controller → Service → DAO → Database
 - **超时与降级**：Agent 调用 25 秒超时，失败返回友好提示；Eino 初始化失败自动回退 Mock
 - **安全**：复用 JWT 鉴权的 userID，禁止客户端伪造；私聊 Agent 只读当前用户与 Agent 的历史，群聊 Agent 只读当前群历史
 
+### 记忆机制
+
+AI 助手**不维护独立的记忆存储**，记忆 = `message` 表里的聊天记录本身。每次被触发时实时拉最近 N 条历史作为上下文注入 LLM，超出窗口的自动「遗忘」。
+
+| 场景 | 上下文来源 | 窗口大小 | 角色映射 |
+|------|-----------|---------|---------|
+| 私聊 | `message` 表中「用户 ↔ Agent」双向最近消息 | 最近 10 条 | 用户发 → `user`；Agent 发 → `assistant` |
+| 群聊 | `message` 表中该群最近消息 | 最近 20 条 | Agent 发 → `assistant`；群成员发 → `user`（带 `昵称: ` 前缀） |
+
+调用流程：构建 `[system, 历史消息..., 当前问题]` → 调用 LLM → Agent 回复写入 `message` 表 → 推送 WebSocket + 追加到 Redis 消息缓存（1 分钟 TTL，仅读加速）。
+
+设计取舍：
+- **优点**：实现极简、记忆与前端聊天记录天然一致（用户能看到的内容就是 Agent「记得」的内容）、无需额外存储
+- **局限**：窗口外的对话彻底丢失、长对话 token 成本线性增长、无摘要/用户画像等长期记忆
+
+相关常量在 [pkg/constants/agent.go](pkg/constants/agent.go)：`AgentPrivateContextLen=10`、`AgentGroupContextLen=20`、`AgentMaxInputLen=4000`、`AgentTimeoutSec=25`。
+
 详细配置见 [AI 助手配置](#4-ai-助手配置可选) 一节。
 
 ---
