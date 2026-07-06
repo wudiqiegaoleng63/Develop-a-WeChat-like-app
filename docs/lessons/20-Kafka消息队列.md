@@ -921,8 +921,8 @@ func normalizePath(path string) string {
     // 查找 "/static/" 的位置
     staticIndex := strings.Index(path, "/static/")
     if staticIndex < 0 {
-        log.Println(path)
-        zlog.Error("路径不合法")
+        // 不含 /static/ 前缀（如空头像、第三方默认头像 URL），原样返回，避免切片越界
+        return path
     }
     
     // 返回从 "/static/" 开始的部分
