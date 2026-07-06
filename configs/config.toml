@@ -1,0 +1,67 @@
+# GoChat 配置模板
+# 复制本文件为 config_local.toml 并填入真实值后使用：
+#   cp configs/config.toml configs/config_local.toml
+# 注意：config_local.toml 已被 .gitignore 忽略，不会提交真实密钥。
+
+[mainConfig]
+appName = "gochat"
+host = "127.0.0.1"
+port = 8000
+
+[mysqlConfig]
+host = "127.0.0.1"
+port = 3306
+user = "root"
+password = "your-mysql-password"
+databaseName = "gochat"
+
+[logConfig]
+logPath = "./logs/app.log"
+
+[staticSrcConfig]
+staticAvatarPath = "./static/avatars"
+staticFilePath = "./static/files"
+
+[redisConfig]
+host = "127.0.0.1"
+port = 6379
+password = ""
+db = 0
+
+# 邮箱验证码配置
+[emailConfig]
+smtpHost     = "smtp.qq.com"           # SMTP服务器
+smtpPort     = 465                      # 端口（SSL加密）
+smtpUsername = "your@qq.com"            # 发件邮箱
+smtpPassword = "your-16-char-auth-code" # QQ 邮箱授权码（16位，非 QQ 密码）
+fromName     = "GoChat"                 # 发件人名称
+
+# ----------------------
+# [kafkaConfig] Kafka配置
+# ----------------------
+[kafkaConfig]
+messageMode = "channel"            # 消息模式：channel（单机）或 kafka（分布式）
+hostPort = "127.0.0.1:9092"        # Kafka地址，多个服务器用逗号分隔
+loginTopic = "login"               # 登录Topic
+chatTopic = "chat_message"         # 聊天消息Topic
+logoutTopic = "logout"             # 登出Topic
+partition = 0                      # 分区号
+timeout = 1                        # 超时秒数，单位秒
+
+# ----------------------
+# [jwtConfig] JWT配置
+# ----------------------
+[jwtConfig]
+secret = "change-this-to-a-random-secret"  # 生产环境必须修改，启动时会校验并拒绝运行
+expireHours = 24
+
+# ----------------------
+# [llmConfig] AI 助手 LLM 配置（可选）
+# 支持 OpenAI 官方及任何 OpenAI 兼容接口（DeepSeek/Qwen/讯飞星火 MaaS 等）。
+# 环境变量优先级高于此处：LLM_PROVIDER / OPENAI_API_KEY / OPENAI_BASE_URL / LLM_MODEL
+# ----------------------
+[llmConfig]
+provider = "mock"                                                       # mock | openai
+apiKey = ""                                                             # API Key（兼容接口可能为 "AppID:Secret" 形式）
+baseUrl = ""                                                            # OpenAI 兼容接口地址
+model = ""                                                              # 模型名

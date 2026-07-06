@@ -86,11 +86,11 @@ Request → Controller → Service → DAO → Database
 
 - **私聊 Agent**：用户给 `AI助手` 发私聊消息，读取最近 N 条历史作为上下文，生成回复并写入消息表、推送 WebSocket
 - **群聊 Agent**：群消息含 `@AI助手`、`@agent` 或 `/ai` 前缀时触发，回复带 `@提问人`，未被触发不主动发言
-- **Provider 切换**：通过 `LLM_PROVIDER` 环境变量切换 `mock`（本地无 key 调试）/ `openai`（真实 LLM），支持任何 OpenAI 兼容接口
+- **Provider 切换**：通过配置文件 `[llmConfig]` 或环境变量切换 `mock`（本地无 key 调试）/ `openai`（真实 LLM），支持任何 OpenAI 兼容接口
 - **超时与降级**：Agent 调用 25 秒超时，失败返回友好提示；Eino 初始化失败自动回退 Mock
 - **安全**：复用 JWT 鉴权的 userID，禁止客户端伪造；私聊 Agent 只读当前用户与 Agent 的历史，群聊 Agent 只读当前群历史
 
-详细配置见 [环境变量](#4-环境变量ai-助手可选) 一节。
+详细配置见 [AI 助手配置](#4-ai-助手配置可选) 一节。
 
 ---
 
@@ -123,7 +123,12 @@ CREATE DATABASE gochat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 ### 3. 修改配置文件
 
-编辑 `configs/config_local.toml`：
+复制模板并编辑 `configs/config_local.toml`：
+
+```bash
+cp configs/config.toml configs/config_local.toml
+```
+
 
 ```toml
 [mainConfig]
@@ -179,9 +184,23 @@ timeout = 1
 - `jwtConfig.secret` 不能使用默认占位符，启动时会校验并拒绝运行
 - 生产环境建议修改 `host` 为 `0.0.0.0`
 
-### 4. 环境变量（AI 助手，可选）
+### 4. AI 助手配置（可选）
 
-AI 助手默认使用 Mock 实现，无需任何配置即可体验。如需接入真实大模型，设置以下环境变量：
+AI 助手默认使用 Mock 实现，无需任何配置即可体验。接入真实大模型有两种方式，**环境变量优先级高于配置文件**：
+
+**方式一：配置文件（推荐，持久化）**
+
+在 `configs/config_local.toml` 中配置 `[llmConfig]` 节：
+
+```toml
+[llmConfig]
+provider = "openai"                                                       # mock | openai
+apiKey = "your-api-key"                                                   # API Key（兼容接口可能为 "AppID:Secret" 形式）
+baseUrl = "https://maas-coding-api.cn-huabei-1.xf-yun.com/v2"             # OpenAI 兼容接口地址
+model = "xopdeepseekv4flash"                                              # 模型名
+```
+
+**方式二：环境变量（临时覆盖）**
 
 ```bash
 export LLM_PROVIDER=openai                          # mock | openai
@@ -192,7 +211,7 @@ export LLM_MODEL=deepseek-chat                      # 模型名
 
 支持的 Provider：
 - `mock`（默认）：本地不调用 LLM，返回模拟回复，适合开发调试
-- `openai`：通过 Eino 调用 OpenAI 或任何 OpenAI 兼容接口（DeepSeek / Qwen / Moonshot / 星火等）
+- `openai`：通过 Eino 调用 OpenAI 或任何 OpenAI 兼容接口（DeepSeek / Qwen / Moonshot / 讯飞星火 MaaS 等）。讯飞星火 MaaS 的 `apiKey` 为 `AppID:Secret` 形式，整体作为 Bearer token 传入即可
 
 ### 3a. 安装 Kafka（可选）
 

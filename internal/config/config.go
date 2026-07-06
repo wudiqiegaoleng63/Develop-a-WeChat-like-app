@@ -74,6 +74,16 @@ type KafkaConfig struct {
     Timeout     time.Duration `toml:"timeout"`     // 超时秒数
 }
 
+// LLMConfig - AI 助手 LLM 配置
+// 支持 OpenAI 官方及任何 OpenAI 兼容接口（DeepSeek/Qwen/讯飞星火 MaaS 等）。
+// 环境变量 LLM_PROVIDER/OPENAI_API_KEY/OPENAI_BASE_URL/LLM_MODEL 优先级高于本配置。
+type LLMConfig struct {
+	Provider string `toml:"provider"` // mock | openai（未设置或空则等价于 mock）
+	APIKey   string `toml:"apiKey"`   // API Key（兼容接口可能为 "AppID:Secret" 形式）
+	BaseURL  string `toml:"baseUrl"`  // OpenAI 兼容接口地址（含 /v1 或 /v2）
+	Model    string `toml:"model"`    // 模型名
+}
+
 // 总配置
 type Config struct {
 	MainConfig    	`toml:"mainConfig"`
@@ -84,6 +94,7 @@ type Config struct {
 	EmailConfig    `toml:"emailConfig"`
 	KafkaConfig     `toml:"kafkaConfig"`
 	JwtConfig       `toml:"jwtConfig"`
+	LLMConfig       `toml:"llmConfig"`
 }
 
 

@@ -10,6 +10,7 @@ import (
 	"github.com/cloudwego/eino-ext/components/model/openai"
 	"github.com/cloudwego/eino/schema"
 
+	"gochat/internal/config"
 	"gochat/pkg/constants"
 	"gochat/pkg/zlog"
 )
@@ -45,11 +46,12 @@ func init() {
 	DefaultClient = newClientFromEnv()
 }
 
-// newClientFromEnv 根据 LLM_PROVIDER 选择实现：
-//   - "mock" 或未设置 → MockClient（本地无 key 调试）
-//   - "openai"/"eino"  → EinoClient（真实 LLM）
+// newClientFromEnv 选择实现（环境变量优先，其次配置文件，最后默认 Mock）：
+//   - provider == "openai"/"eino" → EinoClient（真实 LLM）
+//   - 其他或未配置 → MockClient（本地无 key 调试）
 func newClientFromEnv() AgentClient {
-	provider := os.Getenv("LLM_PROVIDER")
+	cfg := config.GetConfig().LLMConfig
+	provider := firstNonEmpty(os.Getenv("LLM_PROVIDER"), cfg.Provider)
 	switch provider {
 	case "openai", "eino":
 		c, err := NewEinoClient()
@@ -57,12 +59,22 @@ func newClientFromEnv() AgentClient {
 			zlog.Error("Agent: EinoClient 初始化失败，回退到 MockClient: " + err.Error())
 			return NewMockClient()
 		}
-		zlog.Info("Agent: 使用 EinoClient provider=" + provider + " model=" + os.Getenv("LLM_MODEL"))
+		zlog.Info("Agent: 使用 EinoClient provider=" + provider + " model=" + firstNonEmpty(os.Getenv("LLM_MODEL"), cfg.Model))
 		return c
 	default:
-		zlog.Info("Agent: 使用 MockClient（设置 LLM_PROVIDER=openai 启用真实 LLM）")
+		zlog.Info("Agent: 使用 MockClient（设置 LLM_PROVIDER=openai 或配置 [llmConfig] provider=openai 启用真实 LLM）")
 		return NewMockClient()
 	}
+}
+
+// firstNonEmpty 返回第一个非空字符串，用于环境变量覆盖配置文件取值。
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // ===================== MockClient =====================
@@ -98,14 +110,15 @@ type EinoClient struct {
 	chatModel *openai.ChatModel
 }
 
-// NewEinoClient 从环境变量构造 EinoClient。
-// 必填：OPENAI_API_KEY、LLM_MODEL；可选：OPENAI_BASE_URL。
+// NewEinoClient 从环境变量（优先）与配置文件 [llmConfig] 构造 EinoClient。
+// 必填：apiKey、model；可选：baseURL。
 func NewEinoClient() (*EinoClient, error) {
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	modelName := os.Getenv("LLM_MODEL")
-	baseURL := os.Getenv("OPENAI_BASE_URL")
+	cfg := config.GetConfig().LLMConfig
+	apiKey := firstNonEmpty(os.Getenv("OPENAI_API_KEY"), cfg.APIKey)
+	modelName := firstNonEmpty(os.Getenv("LLM_MODEL"), cfg.Model)
+	baseURL := firstNonEmpty(os.Getenv("OPENAI_BASE_URL"), cfg.BaseURL)
 	if apiKey == "" || modelName == "" {
-		return nil, errors.New("OPENAI_API_KEY 和 LLM_MODEL 不能为空")
+		return nil, errors.New("apiKey 和 model 不能为空（检查环境变量或 config_local.toml [llmConfig]）")
 	}
 
 	chatModel, err := openai.NewChatModel(context.Background(), &openai.ChatModelConfig{
