@@ -4,9 +4,9 @@
 
 A full-stack instant messaging application built with Go, React, and TypeScript, integrated with a CloudWeGo Eino AI assistant.
 
-## Tech Stack
+## 🧰 Tech Stack
 
-### Backend
+### 🖥️ Backend
 
 | Technology | Version | Description |
 |------------|---------|-------------|
@@ -22,7 +22,7 @@ A full-stack instant messaging application built with Go, React, and TypeScript,
 | segmentio/kafka-go | 0.4.51 | Message queue (optional) |
 | QQ SMTP | - | Email verification codes |
 
-### Frontend
+### 🎨 Frontend
 
 | Technology | Version | Description |
 |------------|---------|-------------|
@@ -34,7 +34,7 @@ A full-stack instant messaging application built with Go, React, and TypeScript,
 | Ant Design | 5.x | UI component library |
 | Axios | 1.x | HTTP client |
 
-## Project Structure
+## 🗂️ Project Structure
 
 ```
 gochat/
@@ -71,7 +71,7 @@ gochat/
 └── frontend/                 # React frontend project
 ```
 
-## Three-Layer Architecture
+## 🏗️ Three-Layer Architecture
 
 ```
 Request → Controller → Service → DAO → Database
@@ -82,7 +82,7 @@ Development order: Model → DAO → Service → Controller → Route registrati
 
 ---
 
-## AI Assistant
+## 🤖 AI Assistant
 
 The project integrates an AI assistant based on CloudWeGo Eino. It exists in the system as the user `AI助手`.
 
@@ -92,7 +92,7 @@ The project integrates an AI assistant based on CloudWeGo Eino. It exists in the
 - **Timeout and Fallback**: Agent calls time out after 25 seconds and return a friendly message on failure. If Eino initialization fails, the system automatically falls back to Mock.
 - **Security**: Reuses the authenticated userID from JWT and prevents client-side forgery. The private-chat Agent only reads the current user's history with the Agent, and the group-chat Agent only reads the current group's history.
 
-### Memory Mechanism
+### 🧠 Memory Mechanism
 
 The AI assistant **does not maintain a separate memory store**. Memory is simply the chat records in the `message` table. Each time the Agent is triggered, it loads the latest N historical messages in real time and injects them into the LLM context. Messages outside the window are automatically "forgotten".
 
@@ -109,28 +109,28 @@ Design trade-offs:
 
 Related constants are defined in [pkg/constants/agent.go](pkg/constants/agent.go): `AgentPrivateContextLen=10`, `AgentGroupContextLen=20`, `AgentMaxInputLen=4000`, and `AgentTimeoutSec=25`.
 
-See the [AI Assistant configuration](#4-ai-assistant-configuration-optional) section for detailed configuration.
+See the "AI Assistant Configuration" section in the Deployment Guide for detailed configuration.
 
 ---
 
-## Deployment Guide
+## 🚀 Deployment Guide
 
-### Requirements
+### ✅ Requirements
 
 - Go 1.26.1+
-- Node.js 16.0+
+- Node.js 18.0+
 - MySQL 8.0+
 - Redis 6.0+
 - Kafka 3.0+ (optional; not required for single-node deployment)
 
-### 1. Clone the Project
+### 1. 📦 Clone the Project
 
 ```bash
 git clone <repo-url>
 cd gochat
 ```
 
-### 2. Configure the Database
+### 2. 🗄️ Configure the Database
 
 Create the MySQL database:
 
@@ -140,7 +140,7 @@ CREATE DATABASE gochat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 > GORM `AutoMigrate` automatically creates tables on startup, so manual table creation is not required.
 
-### 3. Modify the Configuration File
+### 3. ⚙️ Modify the Configuration File
 
 Copy the template and edit `configs/config_local.toml`:
 
@@ -202,7 +202,7 @@ timeout = 1
 - `jwtConfig.secret` cannot use the default placeholder. The server validates it on startup and refuses to run if it is unchanged.
 - In production, it is recommended to change `host` to `0.0.0.0`.
 
-### 4. AI Assistant Configuration (Optional)
+### 4. 🤖 AI Assistant Configuration (Optional)
 
 The AI assistant uses the Mock implementation by default, so it works without any configuration. To connect a real large language model, use one of the following methods. **Environment variables have higher priority than the configuration file**.
 
@@ -231,7 +231,7 @@ Supported providers:
 - `mock` (default): Does not call an LLM locally and returns mock replies. Suitable for development and debugging.
 - `openai`: Uses Eino to call OpenAI or any OpenAI-compatible API (DeepSeek / Qwen / Moonshot / iFlytek Spark MaaS, etc.). For iFlytek Spark MaaS, the `apiKey` is in the `AppID:Secret` format and should be passed as the whole Bearer token.
 
-### 3a. Install Kafka (Optional)
+### 5. 📨 Install Kafka (Optional)
 
 If distributed message mode is required, install Kafka:
 
@@ -253,7 +253,7 @@ Then change `messageMode` in `config_local.toml` to `kafka`.
 
 > Skip this step for single-node deployment and use the default `channel` mode.
 
-### 5. Start the Backend
+### 6. 🖥️ Start the Backend
 
 ```bash
 # Install Go dependencies
@@ -265,14 +265,14 @@ go run cmd/gochat/main.go
 
 The backend runs at `http://127.0.0.1:8000` by default.
 
-#### Production Build
+#### 🏭 Production Build
 
 ```bash
 go build -o gochat-server cmd/gochat/main.go
 ./gochat-server
 ```
 
-### 6. Start the Frontend
+### 7. 🎨 Start the Frontend
 
 ```bash
 cd frontend
@@ -280,13 +280,13 @@ cd frontend
 # Install dependencies
 npm install
 
-# Start in development mode (default port: 5173)
+# Start in development mode (default port: 3000)
 npm run dev
 ```
 
-The frontend development server runs at `http://localhost:5173` and automatically proxies API requests to the backend.
+The frontend development server runs at `http://localhost:3000`. The default backend address is configured in `frontend/src/utils/constants.ts` as `http://127.0.0.1:8000`.
 
-#### Frontend Configuration
+#### 🎨 Frontend Configuration
 
 Edit `frontend/src/utils/constants.ts` to change the backend address:
 
@@ -295,27 +295,27 @@ export const BACKEND_URL = 'http://127.0.0.1:8000'  // Backend address
 export const WS_URL = 'ws://127.0.0.1:8000'         // WebSocket address
 ```
 
-#### Production Build
+#### 🏭 Production Build
 
 ```bash
 cd frontend
 npm run build
 ```
 
-The build output is located in `frontend/dist/`. The backend already provides static file serving, so the frontend page can be accessed directly through `http://127.0.0.1:8000`.
+The build output is located in `frontend/dist/`. The backend currently only serves uploaded static resources (`/static/avatars` and `/static/files`). In production, use Nginx or another static file server to serve `frontend/dist/`.
 
-### 7. Verify Deployment
+### 8. ✅ Verify Deployment
 
-1. Visit `http://127.0.0.1:8000` to open the login page.
+1. Visit `http://localhost:3000` to open the login page (development mode).
 2. Register an account (email verification code required).
 3. Log in and use the chat features.
 4. Find `AI助手` in contacts and send a message to trigger the Agent reply.
 
 ---
 
-## API Endpoints
+## 🔌 API Endpoints
 
-### User Module
+### 👤 User Module
 
 | API | Route | Description |
 |-----|-------|-------------|
@@ -334,7 +334,7 @@ The build output is located in `frontend/dist/`. The backend already provides st
 | DeleteUsers | `/user/deleteUsers` | Delete users (admin) |
 | SetAdmin | `/user/setAdmin` | Set administrator (admin) |
 
-### Group Module
+### 👥 Group Module
 
 | API | Route | Description |
 |-----|-------|-------------|
@@ -352,7 +352,7 @@ The build output is located in `frontend/dist/`. The backend already provides st
 | DeleteGroups | `/group/deleteGroups` | Delete groups (admin) |
 | SetGroupsStatus | `/group/setGroupsStatus` | Set group status (admin) |
 
-### Session Module
+### 💬 Session Module
 
 | API | Route | Description |
 |-----|-------|-------------|
@@ -362,7 +362,7 @@ The build output is located in `frontend/dist/`. The backend already provides st
 | DeleteSession | `/session/deleteSession` | Delete a session |
 | CheckOpenSessionAllowed | `/session/checkOpenSessionAllowed` | Check whether opening a session is allowed |
 
-### Contact Module
+### 🤝 Contact Module
 
 | API | Route | Description |
 |-----|-------|-------------|
@@ -379,7 +379,7 @@ The build output is located in `frontend/dist/`. The backend already provides st
 | BlackApply | `/contact/blackApply` | Block applicant |
 | GetAddGroupList | `/contact/getAddGroupList` | Get group join request list |
 
-### Message Module
+### ✉️ Message Module
 
 | API | Route | Description |
 |-----|-------|-------------|
@@ -388,26 +388,26 @@ The build output is located in `frontend/dist/`. The backend already provides st
 | UploadAvatar | `/message/uploadAvatar` | Upload avatar |
 | UploadFile | `/message/uploadFile` | Upload file |
 
-### Chatroom Module
+### 🏠 Chatroom Module
 
 | API | Route | Description |
 |-----|-------|-------------|
 | GetCurContactListInChatRoom | `/chatroom/getCurContactListInChatRoom` | Get online members in the chatroom |
 
-## Database Tables
+## 🗄️ Database Tables
 
 | Table | Description | Main Fields |
 |-------|-------------|-------------|
-| user_info | User information | uuid, nickname, email, avatar, status, is_admin, gender, signature, birthday |
-| group_info | Group chat information | uuid, name, avatar, notice, member_cnt, owner_id, add_mode, status |
-| session | Session | uuid, send_id, receive_id, avatar, nickname, type |
-| message | Message | uuid, session_id, send_id, receive_id, content, file_url, file_name, file_size, file_type, type, status |
-| user_contact | User contacts | uuid, owner_id, contact_id, contact_name, contact_avatar, contact_type, status |
-| contact_apply | Contact application | uuid, user_one_id, user_two_id, message, status |
+| user_info | User information | uuid, nickname, email, avatar, status, is_admin, gender, signature, birthday, last_online_at, last_offline_at |
+| group_info | Group chat information | uuid, name, avatar, notice, members, member_cnt, owner_id, add_mode, status |
+| session | Session | uuid, send_id, receive_id, receive_name, avatar, last_message, last_message_at |
+| message | Message | uuid, session_id, send_id, send_name, send_avatar, receive_id, content, url, file_name, file_size, file_type, type, status, av_data |
+| user_contact | User contacts | user_id, contact_id, contact_type, status, update_at |
+| contact_apply | Contact application | uuid, user_id, contact_id, contact_type, message, status, last_apply_at |
 
-All tables use GORM soft delete (`deleted_at` field).
+All core tables except `message` use GORM soft delete (`deleted_at` field).
 
-## UUID Naming Rules
+## 🆔 UUID Naming Rules
 
 | Prefix | Type | Example |
 |--------|------|---------|
@@ -417,7 +417,7 @@ All tables use GORM soft delete (`deleted_at` field).
 | A | ContactApply | A2026042459746164431 |
 | M | Message | M2026042459746164431 |
 
-## Unified Response Format
+## 📦 Unified Response Format
 
 ```json
 {
@@ -433,7 +433,7 @@ All tables use GORM soft delete (`deleted_at` field).
 - HTTP 401: Unauthenticated (token missing/expired/invalid)
 - HTTP 403: Authenticated but unauthorized (for example, a regular user accessing an admin endpoint)
 
-## Frontend Routes
+## 🧭 Frontend Routes
 
 | Path | Page | Permission |
 |------|------|------------|
@@ -444,7 +444,7 @@ All tables use GORM soft delete (`deleted_at` field).
 | `/chat/contactlist` | Contact management | Logged-in users |
 | `/manager` | Admin dashboard | Administrators |
 
-## Features
+## ✨ Features
 
 - User registration/login (email + password, email + verification code)
 - JWT authentication and three-level permissions (public / authenticated user / administrator)
@@ -461,6 +461,6 @@ All tables use GORM soft delete (`deleted_at` field).
 - Redis cache-aside strategy (user information, group information, message lists, session lists)
 - Zap dual-output structured logging
 
-## License
+## 📄 License
 
 MIT

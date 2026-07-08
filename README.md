@@ -4,9 +4,9 @@
 
 基于 Go + React + TypeScript 开发的全栈即时通讯应用，集成 CloudWeGo Eino AI 助手。
 
-## 技术栈
+## 🧰 技术栈
 
-### 后端
+### 🖥️ 后端
 
 | 技术 | 版本 | 说明 |
 |------|------|------|
@@ -22,7 +22,7 @@
 | segmentio/kafka-go | 0.4.51 | 消息队列（可选） |
 | QQ SMTP | - | 邮箱验证码 |
 
-### 前端
+### 🎨 前端
 
 | 技术 | 版本 | 说明 |
 |------|------|------|
@@ -34,7 +34,7 @@
 | Ant Design | 5.x | UI 组件库 |
 | Axios | 1.x | HTTP 请求 |
 
-## 项目结构
+## 🗂️ 项目结构
 
 ```
 gochat/
@@ -71,7 +71,7 @@ gochat/
 └── frontend/                 # React 前端项目
 ```
 
-## 三层架构
+## 🏗️ 三层架构
 
 ```
 Request → Controller → Service → DAO → Database
@@ -82,7 +82,7 @@ Request → Controller → Service → DAO → Database
 
 ---
 
-## AI 助手功能
+## 🤖 AI 助手功能
 
 项目集成了基于 CloudWeGo Eino 的 AI 助手，作为系统用户 `AI助手` 存在。
 
@@ -92,7 +92,7 @@ Request → Controller → Service → DAO → Database
 - **超时与降级**：Agent 调用 25 秒超时，失败返回友好提示；Eino 初始化失败自动回退 Mock
 - **安全**：复用 JWT 鉴权的 userID，禁止客户端伪造；私聊 Agent 只读当前用户与 Agent 的历史，群聊 Agent 只读当前群历史
 
-### 记忆机制
+### 🧠 记忆机制
 
 AI 助手**不维护独立的记忆存储**，记忆 = `message` 表里的聊天记录本身。每次被触发时实时拉最近 N 条历史作为上下文注入 LLM，超出窗口的自动「遗忘」。
 
@@ -109,28 +109,28 @@ AI 助手**不维护独立的记忆存储**，记忆 = `message` 表里的聊天
 
 相关常量在 [pkg/constants/agent.go](pkg/constants/agent.go)：`AgentPrivateContextLen=10`、`AgentGroupContextLen=20`、`AgentMaxInputLen=4000`、`AgentTimeoutSec=25`。
 
-详细配置见 [AI 助手配置](#4-ai-助手配置可选) 一节。
+详细配置见部署指南中的「AI 助手配置」一节。
 
 ---
 
-## 部署指南
+## 🚀 部署指南
 
-### 环境要求
+### ✅ 环境要求
 
 - Go 1.26.1+
-- Node.js 16.0+
+- Node.js 18.0+
 - MySQL 8.0+
 - Redis 6.0+
 - Kafka 3.0+（可选，单机部署可不用）
 
-### 1. 克隆项目
+### 1. 📦 克隆项目
 
 ```bash
 git clone <repo-url>
 cd gochat
 ```
 
-### 2. 配置数据库
+### 2. 🗄️ 配置数据库
 
 创建 MySQL 数据库：
 
@@ -140,7 +140,7 @@ CREATE DATABASE gochat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 > GORM 的 `AutoMigrate` 会在启动时自动创建表，无需手动建表。
 
-### 3. 修改配置文件
+### 3. ⚙️ 修改配置文件
 
 复制模板并编辑 `configs/config_local.toml`：
 
@@ -203,7 +203,7 @@ timeout = 1
 - `jwtConfig.secret` 不能使用默认占位符，启动时会校验并拒绝运行
 - 生产环境建议修改 `host` 为 `0.0.0.0`
 
-### 4. AI 助手配置（可选）
+### 4. 🤖 AI 助手配置（可选）
 
 AI 助手默认使用 Mock 实现，无需任何配置即可体验。接入真实大模型有两种方式，**环境变量优先级高于配置文件**：
 
@@ -232,7 +232,7 @@ export LLM_MODEL=deepseek-chat                      # 模型名
 - `mock`（默认）：本地不调用 LLM，返回模拟回复，适合开发调试
 - `openai`：通过 Eino 调用 OpenAI 或任何 OpenAI 兼容接口（DeepSeek / Qwen / Moonshot / 讯飞星火 MaaS 等）。讯飞星火 MaaS 的 `apiKey` 为 `AppID:Secret` 形式，整体作为 Bearer token 传入即可
 
-### 3a. 安装 Kafka（可选）
+### 5. 📨 安装 Kafka（可选）
 
 如果需要分布式消息模式，需安装 Kafka：
 
@@ -254,7 +254,7 @@ bin/kafka-topics.sh --create --topic logout --bootstrap-server localhost:9092
 
 > 单机部署跳过此步骤，使用默认的 `channel` 模式即可。
 
-### 5. 启动后端
+### 6. 🖥️ 启动后端
 
 ```bash
 # 安装 Go 依赖
@@ -266,14 +266,14 @@ go run cmd/gochat/main.go
 
 后端默认运行在 `http://127.0.0.1:8000`
 
-#### 生产构建
+#### 🏭 生产构建
 
 ```bash
 go build -o gochat-server cmd/gochat/main.go
 ./gochat-server
 ```
 
-### 6. 启动前端
+### 7. 🎨 启动前端
 
 ```bash
 cd frontend
@@ -281,13 +281,13 @@ cd frontend
 # 安装依赖
 npm install
 
-# 开发模式启动（默认端口 5173）
+# 开发模式启动（默认端口 3000）
 npm run dev
 ```
 
-前端开发模式运行在 `http://localhost:5173`，会自动代理 API 请求到后端。
+前端开发模式运行在 `http://localhost:3000`。默认后端地址在 `frontend/src/utils/constants.ts` 中配置为 `http://127.0.0.1:8000`。
 
-#### 前端配置
+#### 🎨 前端配置
 
 编辑 `frontend/src/utils/constants.ts`，修改后端地址：
 
@@ -296,27 +296,27 @@ export const BACKEND_URL = 'http://127.0.0.1:8000'  // 后端地址
 export const WS_URL = 'ws://127.0.0.1:8000'         // WebSocket 地址
 ```
 
-#### 生产构建
+#### 🏭 生产构建
 
 ```bash
 cd frontend
 npm run build
 ```
 
-构建产物在 `frontend/dist/`，后端已配置静态文件服务，可直接通过 `http://127.0.0.1:8000` 访问前端页面。
+构建产物在 `frontend/dist/`。当前后端仅配置了头像和文件的静态资源服务（`/static/avatars`、`/static/files`），生产环境可使用 Nginx 或其他静态文件服务器托管 `frontend/dist/`。
 
-### 7. 验证部署
+### 8. ✅ 验证部署
 
-1. 访问 `http://127.0.0.1:8000` 进入登录页
+1. 访问 `http://localhost:3000` 进入登录页（开发模式）
 2. 注册账号（需要邮箱验证码）
 3. 登录后即可使用聊天功能
 4. 在联系人中找到 `AI助手`，发消息即可触发 Agent 回复
 
 ---
 
-## API 接口
+## 🔌 API 接口
 
-### 用户模块
+### 👤 用户模块
 
 | 接口 | 路由 | 说明 |
 |------|------|------|
@@ -335,7 +335,7 @@ npm run build
 | DeleteUsers | `/user/deleteUsers` | 删除用户（管理员） |
 | SetAdmin | `/user/setAdmin` | 设置管理员（管理员） |
 
-### 群组模块
+### 👥 群组模块
 
 | 接口 | 路由 | 说明 |
 |------|------|------|
@@ -353,7 +353,7 @@ npm run build
 | DeleteGroups | `/group/deleteGroups` | 删除群聊（管理员） |
 | SetGroupsStatus | `/group/setGroupsStatus` | 设置群聊状态（管理员） |
 
-### 会话模块
+### 💬 会话模块
 
 | 接口 | 路由 | 说明 |
 |------|------|------|
@@ -363,7 +363,7 @@ npm run build
 | DeleteSession | `/session/deleteSession` | 删除会话 |
 | CheckOpenSessionAllowed | `/session/checkOpenSessionAllowed` | 检查是否允许发起会话 |
 
-### 联系人模块
+### 🤝 联系人模块
 
 | 接口 | 路由 | 说明 |
 |------|------|------|
@@ -380,7 +380,7 @@ npm run build
 | BlackApply | `/contact/blackApply` | 拉黑申请人 |
 | GetAddGroupList | `/contact/getAddGroupList` | 获取加群申请列表 |
 
-### 消息模块
+### ✉️ 消息模块
 
 | 接口 | 路由 | 说明 |
 |------|------|------|
@@ -389,26 +389,26 @@ npm run build
 | UploadAvatar | `/message/uploadAvatar` | 上传头像 |
 | UploadFile | `/message/uploadFile` | 上传文件 |
 
-### 聊天室模块
+### 🏠 聊天室模块
 
 | 接口 | 路由 | 说明 |
 |------|------|------|
 | GetCurContactListInChatRoom | `/chatroom/getCurContactListInChatRoom` | 获取聊天室在线成员 |
 
-## 数据库表结构
+## 🗄️ 数据库表结构
 
 | 表名 | 说明 | 主要字段 |
 |------|------|----------|
-| user_info | 用户信息 | uuid, nickname, email, avatar, status, is_admin, gender, signature, birthday |
-| group_info | 群聊信息 | uuid, name, avatar, notice, member_cnt, owner_id, add_mode, status |
-| session | 会话 | uuid, send_id, receive_id, avatar, nickname, type |
-| message | 消息 | uuid, session_id, send_id, receive_id, content, file_url, file_name, file_size, file_type, type, status |
-| user_contact | 用户联系人 | uuid, owner_id, contact_id, contact_name, contact_avatar, contact_type, status |
-| contact_apply | 联系人申请 | uuid, user_one_id, user_two_id, message, status |
+| user_info | 用户信息 | uuid, nickname, email, avatar, status, is_admin, gender, signature, birthday, last_online_at, last_offline_at |
+| group_info | 群聊信息 | uuid, name, avatar, notice, members, member_cnt, owner_id, add_mode, status |
+| session | 会话 | uuid, send_id, receive_id, receive_name, avatar, last_message, last_message_at |
+| message | 消息 | uuid, session_id, send_id, send_name, send_avatar, receive_id, content, url, file_name, file_size, file_type, type, status, av_data |
+| user_contact | 用户联系人 | user_id, contact_id, contact_type, status, update_at |
+| contact_apply | 联系人申请 | uuid, user_id, contact_id, contact_type, message, status, last_apply_at |
 
-所有表使用 GORM 软删除（`deleted_at` 字段）。
+除 `message` 表外，其余核心表使用 GORM 软删除（`deleted_at` 字段）。
 
-## Uuid 命名规则
+## 🆔 Uuid 命名规则
 
 | 前缀 | 类型 | 示例 |
 |------|------|------|
@@ -418,7 +418,7 @@ npm run build
 | A | 申请 ContactApply | A2026042459746164431 |
 | M | 消息 Message | M2026042459746164431 |
 
-## 统一响应格式
+## 📦 统一响应格式
 
 ```json
 {
@@ -434,7 +434,7 @@ npm run build
 - HTTP 401：未认证（token 缺失/过期/无效）
 - HTTP 403：已认证但无权限（如普通用户访问管理员接口）
 
-## 前端路由
+## 🧭 前端路由
 
 | 路径 | 页面 | 权限 |
 |------|------|------|
@@ -445,7 +445,7 @@ npm run build
 | `/chat/contactlist` | 联系人管理 | 登录用户 |
 | `/manager` | 管理员后台 | 管理员 |
 
-## 功能特性
+## ✨ 功能特性
 
 - 用户注册/登录（邮箱+密码、邮箱+验证码）
 - JWT 认证与三级权限（公开 / 认证用户 / 管理员）
@@ -462,6 +462,6 @@ npm run build
 - Redis 缓存旁路（用户信息、群信息、消息列表、会话列表）
 - Zap 双输出结构化日志
 
-## License
+## 📄 License
 
 MIT
