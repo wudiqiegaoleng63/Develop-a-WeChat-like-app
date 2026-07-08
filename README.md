@@ -1,5 +1,7 @@
 # GoChat
 
+[中文](README.md) | [English](README.en.md)
+
 基于 Go + React + TypeScript 开发的全栈即时通讯应用，集成 CloudWeGo Eino AI 助手。
 
 ## 技术栈
